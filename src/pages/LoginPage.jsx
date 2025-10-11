@@ -41,7 +41,7 @@ function LoginPage() {
 
   // --- INÍCIO DA PARTE VISUAL (Tudo foi alterado aqui) ---
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+    <div className="flex items-center justify-center min-h-screen bg-slate-100">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Login de Acesso</CardTitle>
