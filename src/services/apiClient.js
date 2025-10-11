@@ -4,10 +4,8 @@ import { auth } from './firebase';
 
 // Cria uma instância do Axios com a URL base da sua API
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3001/api',
-  //Base no railway
-  // baseURL: 'https://adcfzfonoqiivgncrssi.supabase.co/api',
-
+  //baseURL: 'http://localhost:3001/api', //Ambiente de teste
+  baseURL: 'https://backend-saas-juridico.vercel.app/api',
 });
 
 /**
