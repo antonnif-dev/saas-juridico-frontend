@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../services/apiClient';
-import CreateCaseForm from '../components/CreateCaseForm';
+import CreateCaseForm from '../components/cases/CreateCaseForm';
 
 function CasesPage() {
   const [cases, setCases] = useState([]);

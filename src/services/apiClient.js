@@ -4,7 +4,10 @@ import { auth } from './firebase';
 
 // Cria uma instância do Axios com a URL base da sua API
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3001/api', // A porta do seu backend
+  baseURL: 'http://localhost:3001/api',
+  //Base no railway
+  // baseURL: 'https://sua-api-publicada.onrender.com/api',
+
 });
 
 /**

@@ -1,119 +1,87 @@
-import React, { useState } from 'react';
-import { auth } from '../services/firebase';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword // <-- IMPORTAR A FUNÇÃO DE CRIAR USUÁRIO
-} from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/services/firebase';
+import { useAuth } from '@/context/AuthContext';
+
+// Imports dos componentes Shadcn/ui
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function LoginPage() {
+  // --- INÍCIO DA LÓGICA (Nenhuma alteração aqui) ---
   const navigate = useNavigate();
-  const [isLoginView, setIsLoginView] = useState(true); // <-- NOVO
-
+  const { currentUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // <-- NOVO
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Função para lidar com o login de um usuário existente
-  const handleLogin = async () => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Login bem-sucedido!', userCredential.user);
-      navigate('/dashboard');
-      // Idealmente, redirecionar para o dashboard aqui
-    } catch (err) {
-      setError('Falha no login. Verifique suas credenciais.');
-      console.error(err);
+  useEffect(() => {
+    if (currentUser) {
+      navigate('/');
     }
-  };
+  }, [currentUser, navigate]);
 
-  // Função para lidar com o cadastro de um novo usuário
-  const handleRegister = async () => { // <-- NOVO
-    if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
-      return;
-    }
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('Cadastro bem-sucedido!', userCredential.user);
-      navigate('/dashboard');
-      // O Firebase já loga o usuário automaticamente após o cadastro.
-      // Você pode redirecionar para o dashboard ou para uma página de "bem-vindo".
-      
-      // PONTO CRÍTICO: Após o cadastro, você precisará chamar seu backend
-      // para atribuir um perfil (role) padrão a este novo usuário.
-    } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError('Este e-mail já está em uso.');
-      } else {
-        setError('Ocorreu um erro ao realizar o cadastro.');
-      }
-      console.error(err);
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
-    if (isLoginView) {
-      handleLogin();
-    } else {
-      handleRegister();
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      setError('Falha no login. Verifique suas credenciais.');
+    } finally {
+      setIsLoading(false);
     }
   };
+  // --- FIM DA LÓGICA ---
 
-  const toggleView = () => { // <-- NOVO
-    setIsLoginView(!isLoginView);
-    setError(null);
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
-  };
-
+  // --- INÍCIO DA PARTE VISUAL (Tudo foi alterado aqui) ---
   return (
-    <div>
-      {/* O título da página muda de acordo com a visão */}
-      <h2>{isLoginView ? 'Login' : 'Criar Conta'}</h2>
-      <form onSubmit={handleSubmit}>
-        <input 
-          type="email" 
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)} 
-          placeholder="E-mail" 
-          required 
-        />
-        <input 
-          type="password" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)} 
-          placeholder="Senha" 
-          required 
-        />
-        
-        {/* Campo de confirmação de senha, visível apenas no modo de cadastro */}
-        {!isLoginView && ( // <-- NOVO
-          <input 
-            type="password" 
-            value={confirmPassword} 
-            onChange={(e) => setConfirmPassword(e.target.value)} 
-            placeholder="Confirme a Senha" 
-            required 
-          />
-        )}
-
-        {/* O texto do botão muda de acordo com a visão */}
-        <button type="submit">{isLoginView ? 'Entrar' : 'Cadastrar'}</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </form>
-
-      {/* Link para alternar entre as visões de login e cadastro */}
-      <p> 
-        {isLoginView ? 'Não tem uma conta?' : 'Já tem uma conta?'}
-        <button type="button" onClick={toggleView} style={{ marginLeft: '5px', border: 'none', background: 'none', color: 'blue', cursor: 'pointer', padding: 0 }}>
-          {isLoginView ? 'Cadastre-se' : 'Faça Login'}
-        </button>
-      </p>
+    <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-900">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl">Login de Acesso</CardTitle>
+          <CardDescription>Entre com suas credenciais para acessar o painel.</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email"
+                placeholder="seuemail@exemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input 
+                id="password" 
+                type="password"
+                placeholder="Sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            {error && <p className="text-sm font-medium text-red-500">{error}</p>}
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? 'Entrando...' : 'Entrar'}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 }

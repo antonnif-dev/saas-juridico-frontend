@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../services/apiClient';
-import CreateClientForm from '../components/CreateClientForm'; // Importa o formulário
+import CreateClientForm from '../components/clients/CreateClientForm';
 
 function ClientsPage() {
   const [clients, setClients] = useState([]);
@@ -23,7 +23,6 @@ function ClientsPage() {
     fetchClients();
   }, []);
 
-  // Função para adicionar o novo cliente à lista sem recarregar a página
   const handleClientCreated = (newClient) => {
     setClients(prevClients => [newClient, ...prevClients]);
   };

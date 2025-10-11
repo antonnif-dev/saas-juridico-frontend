@@ -1,98 +1,257 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../services/apiClient';
-import { Link } from 'react-router-dom';
+import apiClient from '@/services/apiClient';
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
+
+// Imports dos componentes Shadcn/ui
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 function AgendaPage() {
+  // --- Estados do Componente ---
   const [compromissos, setCompromissos] = useState([]);
   const [processos, setProcessos] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Estados do formulário
-  const [titulo, setTitulo] = useState('');
-  const [dataHora, setDataHora] = useState('');
-  const [tipo, setTipo] = useState('Prazo');
-  const [selectedProcesso, setSelectedProcesso] = useState('');
   const [error, setError] = useState('');
-  
-  // Função para buscar os dados iniciais (compromissos e processos)
+
+  // Estado para controlar o modal (Dialog)
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  /*
   const fetchData = async () => {
     setLoading(true);
+    setError('');
     try {
       const [compromissosRes, processosRes] = await Promise.all([
         apiClient.get('/agenda'),
         apiClient.get('/processo')
       ]);
-      setCompromissos(compromissosRes.data);
+
+      // Filtra para garantir que apenas compromissos com data válida sejam processados
+      const compromissosValidos = compromissosRes.data.filter(
+        c => c.dataHora && typeof c.dataHora.seconds === 'number'
+      );
+      
+      // Ordena os compromissos pela data
+      const sortedCompromissos = compromissosValidos.sort((a, b) => 
+        a.dataHora.seconds - b.dataHora.seconds
+      );
+
+      setCompromissos(sortedCompromissos);
       setProcessos(processosRes.data);
     } catch (err) {
-      console.error("Erro ao buscar dados da agenda:", err);
-      setError("Não foi possível carregar os dados.");
+      console.error("Erro ao buscar dados:", err);
+      setError("Não foi possível carregar os dados da agenda. Verifique o console para mais detalhes.");
     } finally {
       setLoading(false);
     }
   };
+*/
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [compromissosRes, processosRes] = await Promise.all([
+        apiClient.get('/agenda'),
+        apiClient.get('/processo')
+      ]);
+      const compromissosValidos = compromissosRes.data.filter(c => c.dataHora && typeof c.dataHora === 'string');
+
+      const formattedEvents = compromissosValidos.map(c => ({
+        id: c.id,
+        title: c.titulo,
+        start: new Date(c.dataHora),
+        end: new Date(c.dataHora),
+        resource: c,
+      }));
+
+      setCompromissos(formattedEvents);
+      setProcessos(processosRes.data);
+    } catch (err) {
+      setError("Não foi possível carregar os dados da agenda.");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     fetchData();
   }, []);
 
-  const handleSubmit = async (e) => {
+  // --- Funções Handler para o Modal ---
+  const handleCreateClick = (date) => {
+    if (!date) return;
+    setSelectedEvent({
+      titulo: '',
+      tipo: 'Reunião',
+      processoId: '',
+      dataHora: format(date, "yyyy-MM-dd'T'09:00"), // Padrão 09:00 da manhã
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleEditClick = (compromisso) => {
+    setSelectedEvent({
+      ...compromisso,
+      dataHora: format(new Date(compromisso.dataHora), "yyyy-MM-dd'T'HH:mm"),
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleModalSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    const { id, titulo, dataHora, tipo, processoId } = selectedEvent;
+
+    const dataToSend = { titulo, dataHora: new Date(dataHora).toISOString(), tipo, processoId };
+
     try {
-      const newCompromisso = { titulo, dataHora, tipo, processoId: selectedProcesso };
-      await apiClient.post('/agenda', newCompromisso);
-      alert('Compromisso criado com sucesso!');
-      // Limpa formulário e recarrega a lista
-      setTitulo('');
-      setDataHora('');
-      setSelectedProcesso('');
-      fetchData();
+      if (id) {
+        await apiClient.put(`/agenda/${id}`, dataToSend); // Atualiza
+      } else {
+        await apiClient.post('/agenda', dataToSend); // Cria
+      }
+      setIsDialogOpen(false);
+      fetchData(); // Recarrega a lista
     } catch (err) {
-      const errorMessage = err.response?.data?.[0]?.message || err.response?.data?.message || 'Erro.';
-      setError(`Falha ao criar compromisso: ${errorMessage}`);
+      alert('Falha ao salvar o compromisso.');
+      console.error("Erro ao salvar:", err)
     }
   };
 
-  // Função para formatar a data que vem do Firestore
-  const formatDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return 'Data inválida';
-    return new Date(timestamp.seconds * 1000).toLocaleString('pt-BR');
+  // Lógica para apagar um compromisso
+  const handleDelete = async (compromissoId) => {
+    if (window.confirm('Tem certeza que deseja excluir este compromisso?')) {
+      try {
+        await apiClient.delete(`/agenda/${compromissoId}`);
+        fetchData(); // Recarrega a lista
+      } catch (err) {
+        alert('Falha ao excluir o compromisso.');
+      }
+    }
   };
 
+  // Funções para os inputs do formulário no modal
+  const handleInputChange = (e) => setSelectedEvent(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleSelectChange = (name, value) => setSelectedEvent(prev => ({ ...prev, [name]: value }));
+
   return (
-    <div>
-      <h1>Agenda e Prazos</h1>
-      <form onSubmit={handleSubmit} style={{ /* ...estilos... */ }}>
-        <h3>Novo Compromisso</h3>
-        <input type="text" value={titulo} onChange={e => setTitulo(e.target.value)} placeholder="Título" required />
-        <input type="datetime-local" value={dataHora} onChange={e => setDataHora(e.target.value)} required />
-        <select value={tipo} onChange={e => setTipo(e.target.value)}>
-          <option>Prazo</option>
-          <option>Audiência</option>
-          <option>Reunião</option>
-          <option>Outro</option>
-        </select>
-        <select value={selectedProcesso} onChange={e => setSelectedProcesso(e.target.value)} required>
-          <option value="" disabled>Vincular a um Processo</option>
-          {processos.map(p => <option key={p.id} value={p.id}>{p.titulo}</option>)}
-        </select>
-        <button type="submit">Adicionar</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </form>
-      <hr />
-      <h2>Próximos Compromissos</h2>
-      {loading ? <p>Carregando...</p> : (
-        <ul>
-          {compromissos.map(c => (
-            <li key={c.id}>
-              <Link to={`/agenda/${c.id}`}>
-                <strong>{c.titulo}</strong> ({c.tipo}) - {formatDate(c.dataHora)}
-              </Link>
-            </li>
-          ))}
-        </ul>
+    <div className="p-4 md:p-8 space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Agenda e Prazos</h1>
+        <p className="text-muted-foreground">Gerencie seus compromissos e adicione novos eventos no calendário.</p>
+      </div>
+
+      {loading ? <p>Carregando...</p> : error ? <p className="text-destructive">{error}</p> : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Próximos Compromissos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Data e Hora</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {compromissos.length > 0 ? (
+                      compromissos.map(item => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.title}</TableCell>
+                          <TableCell>{format(item.start, 'dd/MM/yyyy HH:mm', { locale: ptBR })}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditClick(item)}>Editar</Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleDelete(item.id)}>Apagar</Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="h-24 text-center">Nenhum compromisso encontrado.</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Adicionar Novo</CardTitle>
+                <CardDescription>Clique em um dia para agendar.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center p-6">
+                <Calendar
+                  mode="single"
+                  onSelect={handleCreateClick}
+                  className="w-full"
+                  locale={ptBR}
+                  captionLayout="dropdown"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleModalSubmit}>
+            <DialogHeader>
+              <DialogTitle>{selectedEvent?.id ? 'Editar Compromisso' : 'Novo Compromisso'}</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid items-center grid-cols-4 gap-4">
+                <Label htmlFor="titulo" className="text-right">Título</Label>
+                <Input id="titulo" name="titulo" value={selectedEvent?.titulo || ''} onChange={handleInputChange} className="col-span-3" required />
+              </div>
+              <div className="grid items-center grid-cols-4 gap-4">
+                <Label htmlFor="dataHora" className="text-right">Data e Hora</Label>
+                <Input id="dataHora" name="dataHora" type="datetime-local" value={selectedEvent?.dataHora || ''} onChange={handleInputChange} className="col-span-3" required />
+              </div>
+              <div className="grid items-center grid-cols-4 gap-4">
+                <Label className="text-right">Tipo</Label>
+                <Select name="tipo" value={selectedEvent?.tipo || 'Reunião'} onValueChange={(value) => handleSelectChange('tipo', value)}>
+                  <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Prazo">Prazo</SelectItem>
+                    <SelectItem value="Audiência">Audiência</SelectItem>
+                    <SelectItem value="Reunião">Reunião</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid items-center grid-cols-4 gap-4">
+                <Label className="text-right">Processo</Label>
+                <Select name="processoId" value={selectedEvent?.processoId || ''} onValueChange={(value) => handleSelectChange('processoId', value)}>
+                  <SelectTrigger className="col-span-3"><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                  <SelectContent>
+                    {processos.map(p => <SelectItem key={p.id} value={p.id}>{p.titulo || p.numeroProcesso}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

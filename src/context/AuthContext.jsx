@@ -2,37 +2,51 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { auth } from '../services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
-// Cria o Contexto
 const AuthContext = createContext();
 
-// Hook customizado para facilitar o uso do contexto
 export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Componente Provedor
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // onAuthStateChanged é um listener que observa mudanças no estado de auth
-    const unsubscribe = onAuthStateChanged(auth, user => {
-      setCurrentUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        try {
+          const tokenResult = await user.getIdTokenResult();
+          const role = tokenResult.claims.role;
+          console.log(`AuthContext: Perfil (role) do usuário '${user.email}' é '${role}'`);
+          setUserRole(role || 'advogado'); // Define 'advogado' se não houver perfil
+        } catch (error) {
+          console.error("AuthContext: Erro ao buscar o perfil do usuário:", error);
+          setUserRole(null);
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
       setLoading(false);
     });
 
-    // Função de limpeza para remover o listener quando o componente for desmontado
     return unsubscribe;
   }, []);
 
   const value = {
-    currentUser
+    currentUser,
+    userRole,
+    loading
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {/* CORREÇÃO: Renderiza os filhos imediatamente.
+          Os componentes filhos agora são responsáveis por reagir ao 'loading'. */}
+      {children}
     </AuthContext.Provider>
   );
 }

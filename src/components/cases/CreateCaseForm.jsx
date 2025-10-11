@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../services/apiClient';
+import apiClient from '@/services/apiClient';
 
 function CreateCaseForm({ onCaseCreated }) {
-  const [numeroProcesso, setNumeroProcesso] = useState('');
+  // --- Seus campos existentes ---
   const [titulo, setTitulo] = useState('');
   const [area, setArea] = useState('Cível');
-  
-  // Estados para a lista de clientes e cliente selecionado
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState('');
   
-  const [error, setError] = useState('');
-  const [loadingClients, setLoadingClients] = useState(true); // Estado de loading para clientes
+  // --- Novos campos do nosso planejamento ---
+  const [numeroProcesso, setNumeroProcesso] = useState('');
+  const [partesEnvolvidas, setPartesEnvolvidas] = useState('');
+  const [comarca, setComarca] = useState('');
+  const [instancia, setInstancia] = useState('');
+  const [status, setStatus] = useState('Em andamento');
 
-  // Busca a lista de clientes quando o formulário é montado
+  // --- Seus estados de controle ---
+  const [error, setError] = useState('');
+  const [loadingClients, setLoadingClients] = useState(true);
+
+  // Sua lógica para buscar clientes (perfeita, sem alterações)
   useEffect(() => {
     const fetchClients = async () => {
       try {
@@ -37,32 +43,47 @@ function CreateCaseForm({ onCaseCreated }) {
     }
     setError('');
     try {
-      const newCase = { 
-        numeroProcesso, 
+      // Objeto de dados mesclado, com todos os campos
+      const caseData = { 
         titulo, 
         area, 
-        clienteId: selectedClient 
+        clientId: selectedClient,
+        numeroProcesso,
+        partesEnvolvidas,
+        comarca,
+        instancia,
+        status,
       };
       
-      const response = await apiClient.post('/processo', newCase);
+      const response = await apiClient.post('/processo', caseData);
       
       alert('Processo criado com sucesso!');
-      onCaseCreated(response.data);
+      if(onCaseCreated) {
+        onCaseCreated(response.data);
+      }
       
-      setNumeroProcesso('');
+      // Limpa todos os campos do formulário
       setTitulo('');
+      setArea('Cível');
       setSelectedClient('');
+      setNumeroProcesso('');
+      setPartesEnvolvidas('');
+      setComarca('');
+      setInstancia('');
+      setStatus('Em andamento');
+
     } catch (err) {
       console.error("Erro detalhado ao criar processo:", err.response || err);
-      const errorMessage = err.response?.data?.[0]?.message || err.response?.data?.message || 'Ocorreu um erro.';
+      const errorMessage = err.response?.data?.message || err.response?.data?.[0]?.message || 'Ocorreu um erro.';
       setError(`Falha ao criar processo: ${errorMessage}`);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px', marginBottom: '20px' }}>
       <h3>Novo Processo</h3>
       
+      {/* Sua lista de seleção de clientes (perfeita, sem alterações) */}
       <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} required>
         <option value="" disabled>
           {loadingClients ? 'Carregando clientes...' : 'Selecione um Cliente'}
@@ -80,14 +101,28 @@ function CreateCaseForm({ onCaseCreated }) {
         )}
       </select>
 
-      <input type="text" value={numeroProcesso} onChange={(e) => setNumeroProcesso(e.target.value)} placeholder="Número do Processo (CNJ)" required />
+      {/* Seus campos existentes */}
       <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título do Processo" required />
+      <input type="text" value={numeroProcesso} onChange={(e) => setNumeroProcesso(e.target.value)} placeholder="Número do Processo (CNJ)" required />
+      
+      {/* Novos campos integrados */}
+      <textarea value={partesEnvolvidas} onChange={(e) => setPartesEnvolvidas(e.target.value)} placeholder="Partes Envolvidas (Autor, Réu)" />
+      <input type="text" value={comarca} onChange={(e) => setComarca(e.target.value)} placeholder="Comarca" />
+      <input type="text" value={instancia} onChange={(e) => setInstancia(e.target.value)} placeholder="Instância (1ª, 2ª, etc.)" />
+
+      {/* Seus campos de seleção existentes, com novos status */}
       <select value={area} onChange={(e) => setArea(e.target.value)}>
         <option value="Cível">Cível</option>
         <option value="Trabalhista">Trabalhista</option>
         <option value="Tributário">Tributário</option>
         <option value="Penal">Penal</option>
         <option value="Outro">Outro</option>
+      </select>
+
+      <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <option value="Em andamento">Em andamento</option>
+        <option value="Suspenso">Suspenso</option>
+        <option value="Arquivado">Arquivado</option>
       </select>
 
       <button type="submit">Salvar Processo</button>
