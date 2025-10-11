@@ -6,7 +6,7 @@ import { auth } from './firebase';
 const apiClient = axios.create({
   baseURL: 'http://localhost:3001/api',
   //Base no railway
-  // baseURL: 'https://sua-api-publicada.onrender.com/api',
+  // baseURL: 'https://adcfzfonoqiivgncrssi.supabase.co/api',
 
 });
 
