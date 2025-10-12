@@ -23,6 +23,7 @@ function Layout() {
           <Link to="/processos">Processos</Link>
           <Link to="/clientes">Clientes</Link>
           <Link to="/agenda">Agenda</Link>
+          <Link to="/equipe">Equipe</Link>
           <div style={{ marginLeft: 'auto' }}>
             <span className="break-words">{currentUser.email}</span> {/* Habilitar nome no cadastro ou deixar email */}
             <button onClick={handleLogout} style={{ marginLeft: '10px'}}>Sair</button>

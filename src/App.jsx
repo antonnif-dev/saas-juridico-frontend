@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
-//import { auth } from './services/firebase';  Função gerar token
+//import { auth } from './services/firebase'; //Função gerar token
+//Usar esse código no console logado com administrador
+//window.auth.currentUser.getIdToken(/* forceRefresh */ true).then(token => console.log(token));
 
 // Componentes
 import PrivateRoute from '@/components/shared/PrivateRoute';
@@ -18,9 +20,10 @@ import ClientDashboardPage from './pages/client/ClientDashboardPage';
 import ClientCaseDetailPage from './pages/client/ClientCaseDetailPage';
 import AgendaPage from './pages/AgendaPage';
 import AgendaDetailPage from './pages/AgendaDetailPage';
+import EquipePage from './pages/EquipePage';
 
 function App() {
-  //window.auth = auth;  Função gerar token
+  //window.auth = auth;  //Função gerar token
   return (
     <Routes>
       {/* --- ROTAS PÚBLICAS GERAIS --- */}
@@ -39,6 +42,7 @@ function App() {
           <Route path="/clientes/:id" element={<ClientDetailPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
+          <Route path="/equipe" element={<EquipePage />} />
         </Route>
       </Route>
 
