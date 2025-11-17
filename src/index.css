@@ -12,8 +12,19 @@
   --cor-destrutiva-hover: #c53030;
   --cor-borda: #e2e8f0;
   --raio-borda: 0.5rem;
+  --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  --cor-navbar-fundo: var(--cor-fundo-card);
+  --cor-navbar-texto: var(--cor-texto-primario);
+  --cor-footer-fundo: #1a202c;
+  --cor-footer-texto: #f4f7f9;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-familia: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-size-base: 10px; /* Tamanho do texto normal (parágrafos) */
+  --font-size-h1: 2rem;  /* Títulos de página (ex: "Dashboard") */
+  --font-size-h2: 1.5rem;   /* Subtítulos (ex: "Próximos Compromissos") */
+  --font-size-h3: 1rem;
   line-height: 1.5;
   font-weight: 400;
 }
@@ -22,13 +33,15 @@ body {
   margin: 0;
   background-color: var(--cor-fundo);
   color: var(--cor-texto-primario);
+  font-family: var(--font-familia);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  font-weight: 400;
 }
 
-body {
-  margin: 0;
-  background-color: var(--cor-fundo);
-  color: var(--cor-texto-primario);
-}
+h1 { font-size: var(--font-size-h1); }
+h2 { font-size: var(--font-size-h2); }
+h3 { font-size: var(--font-size-h3); }
 
 a {
   color: black;

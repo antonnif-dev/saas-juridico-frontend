@@ -1,38 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; // Assumindo que você voltou para o Shadcn/CSS
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const applyTheme = (theme) => {
-  const root = document.documentElement;
-  if (theme.primary) root.style.setProperty('--primary-hsl', theme.primary); // Assumindo HSL
-  if (theme.background) root.style.setProperty('--background-hsl', theme.background);
-  if (theme.card) root.style.setProperty('--card-hsl', theme.card);
-  if (theme.foreground) root.style.setProperty('--foreground-hsl', theme.foreground);
-  if (theme.fontFamily) root.style.setProperty('font-family', theme.fontFamily);
-  if (theme.fontSize) root.style.setProperty('font-size', theme.fontSize);
-};
+import { applyTheme } from '@/lib/theme'; // Importa nosso novo helper
 
 function AdminThemePage() {
-  const [settings, setSettings] = useState({
-    primary: '',
-    background: '',
-    card: '',
-    foreground: '',
-    fontFamily: 'Inter, system-ui, sans-serif',
-    fontSize: '16px'
-  });
+  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // Carrega as configurações salvas
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const { data } = await apiClient.get('/theme');
         setSettings(data);
-        applyTheme(data);
+        applyTheme(data); // Aplica o tema salvo
       } catch (error) {
         console.warn("Nenhum tema salvo encontrado, usando padrões.");
       }
@@ -41,10 +26,16 @@ function AdminThemePage() {
     loadSettings();
   }, []);
 
-  const handleChange = (name, value) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
     const newSettings = { ...settings, [name]: value };
     setSettings(newSettings);
+    // Aplica o preview em tempo real
     applyTheme({ [name]: value }); 
+  };
+  
+  const handleSelectChange = (name, value) => {
+    handleChange({ target: { name, value } });
   };
 
   const handleSave = async () => {
@@ -58,65 +49,76 @@ function AdminThemePage() {
 
   if (loading) return <p>Carregando...</p>;
 
+  // Função helper para criar um seletor de cor
+  const ColorInput = ({ label, name }) => (
+    <div className="form-group">
+      <Label>{label}</Label>
+      <Input 
+        type="color" 
+        name={name}
+        value={settings[name] || '#ffffff'} 
+        onChange={handleChange}
+        className="h-10 p-1" // Estilo para o seletor de cor
+      />
+    </div>
+  );
+
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Configurações de Aparência</h1>
-      <Card className="max-w-2xl">
+    <div className="page-container">
+      <h1 className="page-title">Configurações de Aparência</h1>
+      <Card>
         <CardHeader>
           <CardTitle>Personalize o tema do seu site</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <h3 className="text-lg font-medium">Cores</h3>
-          <p className="text-sm text-muted-foreground">
-            Insira os valores HSL (ex: "240 5.9% 10%").
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Cor Primária (Botões)</Label>
-              <Input value={settings.primary} onChange={(e) => handleChange('primary', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cor de Fundo (Página)</Label>
-              <Input value={settings.background} onChange={(e) => handleChange('background', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cor de Fundo (Cards)</Label>
-              <Input value={settings.card} onChange={(e) => handleChange('card', e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cor do Texto</Label>
-              <Input value={settings.foreground} onChange={(e) => handleChange('foreground', e.target.value)} />
-            </div>
+        <CardContent>
+          <h3 className="text-lg font-medium">Cores Principais</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <ColorInput label="Cor Primária (Botões)" name="corPrimaria" />
+            <ColorInput label="Fundo da Página" name="corFundo" />
+            <ColorInput label="Fundo dos Cards" name="corFundoCard" />
+            <ColorInput label="Texto Principal" name="corTextoPrimario" />
           </div>
           
           <hr />
           
+          <h3 className="text-lg font-medium">Cores de Componentes</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <ColorInput label="Fundo Navbar" name="corNavbarFundo" />
+            <ColorInput label="Texto Navbar" name="corNavbarTexto" />
+            <ColorInput label="Fundo Footer" name="corFooterFundo" />
+            <ColorInput label="Texto Footer" name="corFooterTexto" />
+          </div>
+
+          <hr />
+
           <h3 className="text-lg font-medium">Tipografia</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Fonte</Label>
-              <Select value={settings.fontFamily} onValueChange={(val) => handleChange('fontFamily', val)}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div className="form-group">
+              <Label>Fonte Padrão</Label>
+              <Select value={settings.fontFamilia} onValueChange={(val) => handleSelectChange('fontFamilia', val)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Inter, system-ui, sans-serif">Moderna (Inter)</SelectItem>
-                  <SelectItem value="'Times New Roman', serif">Clássica (Serif)</SelectItem>
+                  <SelectItem value="'Times New Roman', Times, serif">Clássica (Serif)</SelectItem>
+                  <SelectItem value="'Courier New', Courier, monospace">Mono (Código)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Tamanho Base</Label>
-              <Select value={settings.fontSize} onValueChange={(val) => handleChange('fontSize', val)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="14px">Pequeno</SelectItem>
-                  <SelectItem value="16px">Médio (Padrão)</SelectItem>
-                  <SelectItem value="18px">Grande</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="form-group">
+              <Label>Tam. Texto Base (px)</Label>
+              <Input type="number" name="fontSizeBase" value={parseInt(settings.fontSizeBase) || 16} onChange={e => handleChange('fontSizeBase', `${e.target.value}px`)} />
+            </div>
+            <div className="form-group">
+              <Label>Tam. Título H1 (rem)</Label>
+              <Input type="number" step="0.1" name="fontSizeH1" value={parseFloat(settings.fontSizeH1) || 2.25} onChange={e => handleChange('fontSizeH1', `${e.target.value}rem`)} />
+            </div>
+            <div className="form-group">
+              <Label>Tam. Título H2 (rem)</Label>
+              <Input type="number" step="0.1" name="fontSizeH2" value={parseFloat(settings.fontSizeH2) || 1.5} onChange={e => handleChange('fontSizeH2', `${e.target.value}rem`)} />
             </div>
           </div>
 
-          <Button onClick={handleSave} className="mt-4">Salvar Alterações</Button>
+          <Button onClick={handleSave} className="btn btn-primary mt-6">Salvar Alterações</Button>
         </CardContent>
       </Card>
     </div>
