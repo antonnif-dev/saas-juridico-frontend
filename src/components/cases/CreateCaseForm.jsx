@@ -80,11 +80,10 @@ function CreateCaseForm({ onCaseCreated }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px', marginBottom: '20px' }}>
-      <h3>Novo Processo</h3>
-      
+    <form onSubmit={handleSubmit} className='flex flex-col gap-5 mb-5'>
+      <h3 className="text-xl font-semibold">Novo Processo</h3>      
       {/* Sua lista de seleção de clientes (perfeita, sem alterações) */}
-      <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} required>
+      <select value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)} className="select-base" required>
         <option value="" disabled>
           {loadingClients ? 'Carregando clientes...' : 'Selecione um Cliente'}
         </option>
@@ -100,31 +99,23 @@ function CreateCaseForm({ onCaseCreated }) {
           )
         )}
       </select>
-
-      {/* Seus campos existentes */}
-      <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título do Processo" required />
-      <input type="text" value={numeroProcesso} onChange={(e) => setNumeroProcesso(e.target.value)} placeholder="Número do Processo (CNJ)" required />
-      
-      {/* Novos campos integrados */}
-      <textarea value={partesEnvolvidas} onChange={(e) => setPartesEnvolvidas(e.target.value)} placeholder="Partes Envolvidas (Autor, Réu)" />
-      <input type="text" value={comarca} onChange={(e) => setComarca(e.target.value)} placeholder="Comarca" />
-      <input type="text" value={instancia} onChange={(e) => setInstancia(e.target.value)} placeholder="Instância (1ª, 2ª, etc.)" />
-
-      {/* Seus campos de seleção existentes, com novos status */}
-      <select value={area} onChange={(e) => setArea(e.target.value)}>
+      <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Título do Processo" className="input-base" required />
+      <input type="text" value={numeroProcesso} onChange={(e) => setNumeroProcesso(e.target.value)} className="input-base" placeholder="Número do Processo (CNJ)" required />      
+      <textarea value={partesEnvolvidas} onChange={(e) => setPartesEnvolvidas(e.target.value)} className="textarea-base" placeholder="Partes Envolvidas (Autor, Réu)" />
+      <input type="text" value={comarca} onChange={(e) => setComarca(e.target.value)} className="input-base" placeholder="Comarca" />
+      <input type="text" value={instancia} onChange={(e) => setInstancia(e.target.value)} className="input-base" placeholder="Instância (1ª, 2ª, etc.)" />
+      <select value={area} onChange={(e) => setArea(e.target.value)} className="select-base">
         <option value="Cível">Cível</option>
         <option value="Trabalhista">Trabalhista</option>
         <option value="Tributário">Tributário</option>
         <option value="Penal">Penal</option>
         <option value="Outro">Outro</option>
       </select>
-
-      <select value={status} onChange={(e) => setStatus(e.target.value)}>
+      <select value={status} onChange={(e) => setStatus(e.target.value)} className="select-base">
         <option value="Em andamento">Em andamento</option>
         <option value="Suspenso">Suspenso</option>
         <option value="Arquivado">Arquivado</option>
       </select>
-
       <button type="submit">Salvar Processo</button>
       {error && <p style={{ color: 'red' }}>{error}</p>}
     </form>

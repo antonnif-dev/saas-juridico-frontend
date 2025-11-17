@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import apiClient from '../services/apiClient'; // Nosso conector da API
+import apiClient from '../services/apiClient';
 import { auth } from '../services/firebase';
 import { signOut } from 'firebase/auth';
 import { Link } from 'react-router-dom';
@@ -22,7 +22,6 @@ function DashboardPage() {
   const [summaryData, setSummaryData] = useState(null);
   const [error, setError] = useState('');
 
-  // Busca os clientes do backend quando o componente é montado
   useEffect(() => {
     const fetchClients = async () => {
       try {
@@ -65,21 +64,18 @@ function DashboardPage() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* Cabeçalho */}
+    <div>
       <div className="flex justify-between items-center mb-5">
         <div>
           {currentUser && (
             <p className="mt-1">
-              Seja muito bem-vindo de volta, {currentUser.nome}!
+              Seja muito bem-vindo de volta,{currentUser.nome}!
             </p>
           )}
         </div>
       </div>
-
-      <hr className="mb-6" />
-
-      <div className="inline-flex gap-5 my-8">
+      <hr className="mb-6"/>
+      <div className="flex justify-center align-center my-8 gap-1">
         <StatCard title="Processos Ativos" value={summaryData?.processosAtivosCount} linkTo="/processos" />
         <StatCard title="Total de Clientes" value={summaryData?.totalClientesCount} linkTo="/clientes" />
       </div>

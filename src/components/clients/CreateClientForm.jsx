@@ -50,30 +50,34 @@ function CreateClientForm({ onClientCreated }) {
         type="text" 
         value={name} 
         onChange={(e) => setName(e.target.value)} 
-        placeholder="Nome completo / Razão Social" 
+        placeholder="Nome completo / Razão Social"
+        className="input-base"
         required 
       />
       <input 
         type="email" 
         value={email} 
         onChange={(e) => setEmail(e.target.value)} 
-        placeholder="E-mail (será o login do cliente)" 
+        placeholder="E-mail (será o login do cliente)"
+        className="input-base"
         required 
       />
       <input 
         type="password" 
         value={password} 
         onChange={(e) => setPassword(e.target.value)} 
-        placeholder="Senha de acesso para o cliente" 
+        placeholder="Senha de acesso para o cliente"
+        className="input-base"
         required 
       />
       <input 
         type="tel" 
         value={phone} 
         onChange={(e) => setPhone(e.target.value)} 
-        placeholder="Telefone (opcional)" 
+        placeholder="Telefone (opcional)"
+        className="input-base"
       />
-      <select value={type} onChange={(e) => setType(e.target.value)}>
+      <select value={type} onChange={(e) => setType(e.target.value)} className="select-base">
         <option value="PF">Pessoa Física</option>
         <option value="PJ">Pessoa Jurídica</option>
       </select>

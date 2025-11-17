@@ -65,10 +65,10 @@ function ClientDetailPage() {
       {isEditing ? (
         <form onSubmit={handleUpdate}>
           <h3>Editando Cliente</h3>
-          <input type="text" name="name" value={formData.name} onChange={handleFormChange} placeholder="Nome" />
-          <input type="email" name="email" value={formData.email} onChange={handleFormChange} placeholder="Email" />
-          <input type="tel" name="phone" value={formData.phone} onChange={handleFormChange} placeholder="Telefone" />
-          <select name="type" value={formData.type} onChange={handleFormChange}>
+          <input type="text" name="name" value={formData.name} onChange={handleFormChange} className='input-base' placeholder="Nome" />
+          <input type="email" name="email" value={formData.email} onChange={handleFormChange} className='input-base' placeholder="Email" />
+          <input type="tel" name="phone" value={formData.phone} onChange={handleFormChange} className='input-base' placeholder="Telefone" />
+          <select name="type" value={formData.type} onChange={handleFormChange} className='select-base'>
             <option value="PF">Pessoa Física</option>
             <option value="PJ">Pessoa Jurídica</option>
           </select>

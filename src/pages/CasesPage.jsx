@@ -31,29 +31,32 @@ function CasesPage() {
   };
 
   return (
-    <div>
-      <h1>Meus Processos</h1>
-      <CreateCaseForm onCaseCreated={handleCaseCreated} />
-      <hr />
-      <h2>Lista de Processos</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {loading ? (
-        <p>Carregando...</p>
-      ) : (
-        <ul>
-          {cases.length > 0 ? (
-            cases.map(c => (
-              <li key={c.id}>
-                <Link to={`/processos/${c.id}`}>
-                  {c.titulo} ({c.area}) - Nº: {c.numeroProcesso}
-                </Link>
-              </li>
-            ))
-          ) : (
-            <p>Nenhum processo encontrado.</p>
-          )}
-        </ul>
-      )}
+    <div className="flex flex-col lg:flex-row gap-10">
+      <div className="lg:w-2/5">
+        <CreateCaseForm onCaseCreated={handleCaseCreated} />
+      </div>
+      <div className="lg:w-3/5">
+        <hr />
+        <h2>Lista de Processos</h2>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {loading ? (
+          <p>Carregando...</p>
+        ) : (
+          <ul>
+            {cases.length > 0 ? (
+              cases.map(c => (
+                <li key={c.id}>
+                  <Link to={`/processos/${c.id}`}>
+                    {c.titulo} ({c.area}) - Nº: {c.numeroProcesso}
+                  </Link>
+                </li>
+              ))
+            ) : (
+              <p>Nenhum processo encontrado.</p>
+            )}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

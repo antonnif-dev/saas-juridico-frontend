@@ -3,10 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 
 function CaseDetailPage() {
-  const { id: processoId } = useParams(); // Renomeado 'id' para 'processoId' para clareza
+  const { id: processoId } = useParams();
   const navigate = useNavigate();
 
-  // --- Seus estados existentes ---
   const [caseDetail, setCaseDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [clientName, setClientName] = useState('Carregando...');
@@ -16,30 +15,24 @@ function CaseDetailPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
 
-  // --- NOVOS ESTADOS PARA A LINHA DO TEMPO ---
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [novaMovimentacao, setNovaMovimentacao] = useState('');
 
-  // --- NOVOS ESTADOS PARA CONTROLE DA EDIÇÃO ---
   const [editingMovId, setEditingMovId] = useState(null);
   const [editingText, setEditingText] = useState('');
 
-  // Função de busca de dados, agora incluindo as movimentações
   const fetchData = useCallback(async () => {
     try {
-      // Usamos Promise.all para buscar tudo em paralelo
       const [caseResponse, movimentacoesResponse] = await Promise.all([
         apiClient.get(`/processo/${processoId}`),
         apiClient.get(`/processo/${processoId}/movimentacoes`)
       ]);
 
       setCaseDetail(caseResponse.data);
-      setMovimentacoes(movimentacoesResponse.data); // Salva as movimentações no estado
+      setMovimentacoes(movimentacoesResponse.data);
 
-      // Preenche o formulário de edição com os dados mais recentes
       setFormData(caseResponse.data);
 
-      // Busca o nome do cliente (sua lógica existente)
       if (caseResponse.data.clientId) {
         const clientResponse = await apiClient.get(`/clients/${caseResponse.data.clientId}`);
         setClientName(clientResponse.data.name);
@@ -59,7 +52,6 @@ function CaseDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  // --- NOVA FUNÇÃO PARA ADICIONAR MOVIMENTAÇÃO ---
   const handleAddMovimentacao = async (e) => {
     e.preventDefault();
     if (!novaMovimentacao.trim()) return;
@@ -68,8 +60,8 @@ function CaseDetailPage() {
       await apiClient.post(`/processo/${processoId}/movimentacoes`, {
         descricao: novaMovimentacao
       });
-      setNovaMovimentacao(''); // Limpa o campo
-      fetchData(); // Re-busca todos os dados para atualizar a tela
+      setNovaMovimentacao('');
+      fetchData();
     } catch (err) {
       console.error("Erro ao adicionar movimentação:", err);
       alert('Falha ao registrar movimentação.');
@@ -93,7 +85,7 @@ function CaseDetailPage() {
       });
       setEditingMovId(null);
       setEditingText('');
-      fetchData(); // Atualiza a lista
+      fetchData();
     } catch (err) {
       alert('Falha ao atualizar a movimentação.');
     }
@@ -103,7 +95,7 @@ function CaseDetailPage() {
     if (window.confirm('Tem certeza que deseja excluir esta movimentação?')) {
       try {
         await apiClient.delete(`/processo/${processoId}/movimentacoes/${movimentacaoId}`);
-        fetchData(); // Atualiza a lista
+        fetchData();
       } catch (err) {
         alert('Falha ao excluir a movimentação.');
       }
@@ -121,8 +113,6 @@ function CaseDetailPage() {
       }
     }
   };
-
-  // --- Suas funções existentes (upload, delete, update) permanecem aqui ---
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -182,23 +172,16 @@ function CaseDetailPage() {
       }
     };
 
-
   if (loading) return <p>Carregando detalhes do processo...</p>;
   if (!caseDetail) return <p>Processo não encontrado.</p>;
 
-  // --- NOVAS FUNÇÕES PARA EDITAR E EXCLUIR ---
-
-
-  // --- JSX FINAL MESCLADO ---
   return (
     <div style={{ padding: '20px' }}>
       {isEditing ? (
         <form onSubmit={handleUpdate}>
-          {/* Formulário de edição do Processo */}
           <h3>Editando Processo</h3>
-          <input name="titulo" value={formData.titulo} onChange={handleFormChange} placeholder="Título" />
-          <input name="numeroProcesso" value={formData.numeroProcesso} onChange={handleFormChange} placeholder="Nº do Processo" />
-          {/* Adicione outros campos editáveis do processo aqui */}
+          <input name="titulo" value={formData.titulo} onChange={handleFormChange} className='input-base' placeholder="Título" />
+          <input name="numeroProcesso" value={formData.numeroProcesso} onChange={handleFormChange} className='input-base' placeholder="Nº do Processo" />
           <button type="submit">Salvar Alterações</button>
           <button type="button" onClick={() => setIsEditing(false)}>Cancelar</button>
         </form>
@@ -219,8 +202,7 @@ function CaseDetailPage() {
 
       <hr style={{ margin: '30px 0' }} />
 
-      {/* --- SEÇÃO DA LINHA DO TEMPO (COM EDIÇÃO E EXCLUSÃO) --- */}
-      <div>
+      <div className='w-full'>
         <h3>Linha do Tempo / Movimentações</h3>
         <form onSubmit={handleAddMovimentacao} style={{ marginBottom: '20px' }}>
           <textarea
@@ -228,6 +210,7 @@ function CaseDetailPage() {
             onChange={(e) => setNovaMovimentacao(e.target.value)}
             placeholder="Registre uma nova movimentação..."
             style={{ width: '100%', minHeight: '80px', marginBottom: '10px' }}
+            className='textarea-base'
             required
           />
           <button type="submit">Registrar Movimentação</button>
@@ -238,20 +221,18 @@ function CaseDetailPage() {
             <div key={mov.id} style={{ borderLeft: '3px solid #007bff', padding: '10px 20px', marginBottom: '15px', backgroundColor: '#f8f9fa' }}>
               <p style={{ fontWeight: 'bold', margin: 0 }}>{new Date(mov.data._seconds * 1000).toLocaleString('pt-BR')}</p>
 
-              {/* Lógica de renderização condicional para edição */}
               {editingMovId === mov.id ? (
-                // MODO DE EDIÇÃO para este item
                 <div>
                   <textarea
                     value={editingText}
                     onChange={(e) => setEditingText(e.target.value)}
                     style={{ width: '100%', minHeight: '60px', marginTop: '5px' }}
+                    className='textarea-base'
                   />
                   <button onClick={() => handleUpdateMovimentacao(mov.id)} style={{ marginTop: '5px' }}>Salvar</button>
                   <button onClick={handleCancelEdit} style={{ marginLeft: '5px', marginTop: '5px' }}>Cancelar</button>
                 </div>
               ) : (
-                // MODO DE VISUALIZAÇÃO para este item
                 <div>
                   <p style={{ margin: 0 }}>{mov.descricao}</p>
                   <div style={{ marginTop: '10px' }}>
@@ -269,14 +250,12 @@ function CaseDetailPage() {
 
       <hr style={{ margin: '30px 0' }} />
 
-      {/* --- Sua seção de documentos (sem alterações) --- */}
       <div>
         <h3>Documentos</h3>
         <ul>
           {caseDetail.documentos && caseDetail.documentos.length > 0 ? (
             caseDetail.documentos.map((doc, index) => (
               <li key={doc.id || index}>
-                {/* LINHA CORRIGIDA 👇 */}
                 <a href="#" onClick={(e) => { e.preventDefault(); handlePreviewClick(doc); }}>
                   {doc.nome}
                 </a>
@@ -288,7 +267,7 @@ function CaseDetailPage() {
         </ul>
         <div>
           <h4>Adicionar Novo Documento</h4>
-          <input id="file-input" type="file" onChange={handleFileChange} />
+          <input id="file-input" type="file" onChange={handleFileChange} className='input-base' />
           <button onClick={handleFileUpload} disabled={!selectedFile || isUploading}>
             {isUploading ? 'Enviando...' : 'Enviar Documento'}
           </button>
@@ -297,7 +276,6 @@ function CaseDetailPage() {
 
       {previewFile && (
         <div
-          // Este div é o fundo escuro (overlay)
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 1000,

@@ -28,29 +28,33 @@ function ClientsPage() {
   };
 
   return (
-    <div>
-      <h1>Clientes</h1>
-      <CreateClientForm onClientCreated={handleClientCreated} />
-      <hr />
-      <h2>Lista de Clientes</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {loading ? (
-        <p>Carregando...</p>
-      ) : (
-        <ul>
-          {clients.length > 0 ? (
-            clients.map(client => (
-              <li key={client.id}>
-                <Link to={`/clientes/${client.id}`}>
-                  {client.name} ({client.type}) - {client.email}
-                </Link>
-              </li>
-            ))
-          ) : (
-            <p>Nenhum cliente encontrado.</p>
-          )}
-        </ul>
-      )}
+    <div className="flex flex-col lg:flex-row gap-10">
+      <div className="lg:w-2/5">
+        <h1>Clientes</h1>
+        <CreateClientForm onClientCreated={handleClientCreated} />
+        <hr />
+      </div>
+      <div className="lg:w-3/5">
+        <h2>Lista de Clientes</h2>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {loading ? (
+          <p>Carregando...</p>
+        ) : (
+          <ul>
+            {clients.length > 0 ? (
+              clients.map(client => (
+                <li key={client.id}>
+                  <Link to={`/clientes/${client.id}`}>
+                    {client.name} ({client.type}) - {client.email}
+                  </Link>
+                </li>
+              ))
+            ) : (
+              <p>Nenhum cliente encontrado.</p>
+            )}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

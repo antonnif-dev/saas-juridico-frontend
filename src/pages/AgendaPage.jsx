@@ -24,37 +24,6 @@ function AgendaPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  /*
-  const fetchData = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [compromissosRes, processosRes] = await Promise.all([
-        apiClient.get('/agenda'),
-        apiClient.get('/processo')
-      ]);
-
-      // Filtra para garantir que apenas compromissos com data válida sejam processados
-      const compromissosValidos = compromissosRes.data.filter(
-        c => c.dataHora && typeof c.dataHora.seconds === 'number'
-      );
-      
-      // Ordena os compromissos pela data
-      const sortedCompromissos = compromissosValidos.sort((a, b) => 
-        a.dataHora.seconds - b.dataHora.seconds
-      );
-
-      setCompromissos(sortedCompromissos);
-      setProcessos(processosRes.data);
-    } catch (err) {
-      console.error("Erro ao buscar dados:", err);
-      setError("Não foi possível carregar os dados da agenda. Verifique o console para mais detalhes.");
-    } finally {
-      setLoading(false);
-    }
-  };
-*/
-
   const fetchData = async () => {
     setLoading(true);
     setError('');
@@ -151,6 +120,24 @@ function AgendaPage() {
       {loading ? <p>Carregando...</p> : error ? <p className="text-destructive">{error}</p> : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Adicionar Novo</CardTitle>
+                <CardDescription>Clique em um dia para agendar.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center p-6">
+                <Calendar
+                  mode="single"
+                  onSelect={handleCreateClick}
+                  className="w-full"
+                  locale={ptBR}
+                  captionLayout="dropdown"
+                />
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
@@ -184,24 +171,6 @@ function AgendaPage() {
                     )}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Adicionar Novo</CardTitle>
-                <CardDescription>Clique em um dia para agendar.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex justify-center p-6">
-                <Calendar
-                  mode="single"
-                  onSelect={handleCreateClick}
-                  className="w-full"
-                  locale={ptBR}
-                  captionLayout="dropdown"
-                />
               </CardContent>
             </Card>
           </div>

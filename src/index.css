@@ -1,7 +1,6 @@
 @import "tailwindcss";
+@import "./styles/forms.css";
 
-/*@import "./styles/calendar-overrides.css"; */
-/*
 :root {
   --cor-fundo: #f4f7f9;
   --cor-fundo-card: #ffffff;
@@ -13,7 +12,6 @@
   --cor-destrutiva-hover: #c53030;
   --cor-borda: #e2e8f0;
   --raio-borda: 0.5rem;
-  --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -24,25 +22,6 @@ body {
   margin: 0;
   background-color: var(--cor-fundo);
   color: var(--cor-texto-primario);
-}
-*/
-
-:root {
-  --cor-fundo: #f8fafc;
-  --cor-fundo-card: #ffffff;
-  --cor-texto-primario: #0f172a;
-  --cor-texto-secundario: #64748b;
-  --cor-primaria: #3b82f6;
-  --cor-primaria-hover: #2563eb;
-  --cor-destrutiva: #ef4444;
-  --cor-destrutiva-hover: #dc2626;
-  --cor-borda: #e2e8f0;
-  --raio-borda: 0.5rem;
-  --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
 }
 
 body {
@@ -52,14 +31,14 @@ body {
 }
 
 a {
-  color: var(--cor-primaria);
+  color: black;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 a:hover {
-  color: var(--cor-primaria-hover);
-  text-decoration: underline;
+  color: white;
+  text-decoration: none;
 }
 
 hr {
@@ -67,10 +46,6 @@ hr {
   border-top: 1px solid var(--cor-borda);
   margin: 2rem 0;
 }
-
-/* ==========================================================================
-   2. COMPONENTES GENÉRICOS (Botões, Forms, Cards)
-   ========================================================================== */
 
 .btn {
   display: inline-block;
@@ -84,6 +59,7 @@ hr {
   transition: all 0.2s ease-in-out;
   width: 100%;
 }
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -94,6 +70,7 @@ hr {
   background-color: var(--cor-primaria);
   border-color: var(--cor-primaria);
 }
+
 .btn-primary:hover {
   background-color: var(--cor-primaria-hover);
   border-color: var(--cor-primaria-hover);
@@ -104,6 +81,7 @@ hr {
   background-color: transparent;
   border-color: var(--cor-borda);
 }
+
 .btn-outline:hover {
   background-color: var(--cor-fundo);
 }
@@ -113,6 +91,7 @@ hr {
   background-color: var(--cor-destrutiva);
   border-color: var(--cor-destrutiva);
 }
+
 .btn-destructive:hover {
   background-color: var(--cor-destrutiva-hover);
   border-color: var(--cor-destrutiva-hover);
@@ -130,7 +109,9 @@ hr {
   box-shadow: var(--sombra-card);
 }
 
-.card-header, .card-content, .card-footer {
+.card-header,
+.card-content,
+.card-footer {
   padding: 1.5rem;
 }
 
@@ -143,6 +124,7 @@ hr {
   font-weight: 600;
   margin: 0;
 }
+
 .card-description {
   color: var(--cor-texto-secundario);
   font-size: 0.875rem;
@@ -163,6 +145,7 @@ hr {
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
+
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
@@ -180,10 +163,6 @@ hr {
 .form-group {
   margin-bottom: 1.25rem;
 }
-
-/* ==========================================================================
-   3. LAYOUT E PÁGINAS
-   ========================================================================== */
 
 /* --- Container Principal --- */
 .page-container {
@@ -204,6 +183,7 @@ hr {
   justify-content: center;
   min-height: 100vh;
 }
+
 .login-card {
   width: 100%;
   max-width: 400px;
@@ -216,6 +196,7 @@ hr {
   gap: 1.5rem;
   margin: 2rem 0;
 }
+
 .stat-card-value {
   font-size: 2.5rem;
   font-weight: 700;
@@ -227,14 +208,18 @@ hr {
   border-collapse: collapse;
   text-align: left;
 }
-.table th, .table td {
+
+.table th,
+.table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--cor-borda);
 }
+
 .table th {
   font-weight: 600;
   color: var(--cor-texto-secundario);
 }
+
 .table tbody tr:hover {
   background-color: var(--cor-fundo);
 }
@@ -252,6 +237,7 @@ hr {
   align-items: center;
   justify-content: center;
 }
+
 .modal-content {
   background: white;
   padding: 2rem;
@@ -259,12 +245,14 @@ hr {
   max-width: 500px;
   width: 90%;
 }
+
 .modal-footer {
   margin-top: 1.5rem;
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
 }
+
 .modal-footer .btn {
   width: auto;
 }

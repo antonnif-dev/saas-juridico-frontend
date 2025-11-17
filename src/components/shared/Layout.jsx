@@ -17,15 +17,15 @@ function Layout() {
   return (
     <div>
       <header>
-        <nav style={{ display: 'flex', gap: '20px', padding: '20px', background: '#00a8ff' }}>
-          <h1>SaaS Jurídico</h1>
+        <nav className='flex justify-around gap-6 p-4 bg-blue-400 flex-wrap'>
+          <h1 className='break-all'>SaaS <br /> Jurídico</h1>
           <Link to="/dashboard">Dashboard</Link>
           <Link to="/processos">Processos</Link>
           <Link to="/clientes">Clientes</Link>
           <Link to="/agenda">Agenda</Link>
           <Link to="/equipe">Equipe</Link>
           <div style={{ marginLeft: 'auto' }}>
-            <span className="break-words">{currentUser.email}</span> {/* Habilitar nome no cadastro ou deixar email */}
+            <span className="break-words">{currentUser.email}</span>
             <button onClick={handleLogout} style={{ marginLeft: '10px'}}>Sair</button>
           </div>
         </nav>
