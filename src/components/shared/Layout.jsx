@@ -24,6 +24,7 @@ function Layout() {
           <Link to="/clientes">Clientes</Link>
           <Link to="/agenda">Agenda</Link>
           <Link to="/equipe">Equipe</Link>
+          <Link to="/admin/tema">Aparência</Link>
           <div style={{ marginLeft: 'auto' }}>
             <span className="break-words">{currentUser.email}</span>
             <button onClick={handleLogout} style={{ marginLeft: '10px'}}>Sair</button>

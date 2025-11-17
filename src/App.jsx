@@ -21,6 +21,7 @@ import ClientCaseDetailPage from './pages/client/ClientCaseDetailPage';
 import AgendaPage from './pages/AgendaPage';
 import AgendaDetailPage from './pages/AgendaDetailPage';
 import EquipePage from './pages/EquipePage';
+import AdminThemePage from './pages/AdminThemePage';
 
 function App() {
   //window.auth = auth;  //Função gerar token
@@ -43,6 +44,7 @@ function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
           <Route path="/equipe" element={<EquipePage />} />
+          <Route path="/admin/tema" element={<AdminThemePage />} />
         </Route>
       </Route>
 
