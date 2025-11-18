@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-function EditAdvogadoForm() {
+function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -88,6 +88,7 @@ function EditAdvogadoForm() {
             <Label htmlFor="name">Nome Completo</Label>
             <Input
               id="name"
+              name="name" // Adicionado para consistência
               value={formData.name}
               onChange={handleChange}
               required
@@ -98,6 +99,7 @@ function EditAdvogadoForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email" // Adicionado para consistência
               type="email"
               value={formData.email}
               onChange={handleChange}
@@ -109,6 +111,7 @@ function EditAdvogadoForm() {
             <Label htmlFor="password">Nova Senha (opcional)</Label>
             <Input
               id="password"
+              name="password" // Adicionado para consistência
               type="password"
               placeholder="Deixe vazio para não alterar"
               value={formData.password}
@@ -118,9 +121,20 @@ function EditAdvogadoForm() {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button type="submit" disabled={saving} className="w-full">
-            {saving ? "Salvando..." : "Salvar Alterações"}
-          </Button>
+          {/* Seção dos botões com flexbox para alinhá-los */}
+          <div className="flex gap-4">
+            <Button type="submit" disabled={saving} className="w-full">
+              {saving ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={onCancel} // Chama a função onCancel vinda das props
+            >
+              Cancelar
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

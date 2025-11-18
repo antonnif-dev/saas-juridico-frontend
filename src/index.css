@@ -21,8 +21,8 @@
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   --font-familia: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --font-size-base: 10px; /* Tamanho do texto normal (parágrafos) */
-  --font-size-h1: 2rem;  /* Títulos de página (ex: "Dashboard") */
+  --font-size-base: 14px; /* Tamanho do texto normal (parágrafos) */
+  --font-size-h1: 1.7rem;  /* Títulos de página (ex: "Dashboard") */
   --font-size-h2: 1.5rem;   /* Subtítulos (ex: "Próximos Compromissos") */
   --font-size-h3: 1rem;
   line-height: 1.5;
