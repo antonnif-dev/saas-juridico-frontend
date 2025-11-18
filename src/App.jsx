@@ -36,6 +36,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route path="/portal/login" element={<ClientLoginPage />} />
+      <Route path="/pre-atendimento" element={<PreAtendimentoPage />} />
       <Route element={<PrivateRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -46,8 +47,7 @@ function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
           <Route path="/equipe" element={<EquipePage />} />
-          <Route path="/admin/tema" element={<AdminThemePage />} />
-          <Route path="/pre-atendimento" element={<PreAtendimentoPage />} />
+          <Route path="/admin/tema" element={<AdminThemePage />} />          
           <Route path="/atendimento" element={<AtendimentoPage />} />
           <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
           <Route path="/notificacoes" element={<NotificacaoPage />} />

@@ -4,14 +4,17 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/services/firebase';
 import { useAuth } from '@/context/AuthContext';
 
-// Imports dos componentes Shadcn/ui
+// Componentes Shadcn/ui
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// Ícones Lucide para identidade visual
+import { Scale, Shield, Clock, Users, ChevronRight, ArrowRight } from 'lucide-react';
+
 function LoginPage() {
-  // --- INÍCIO DA LÓGICA (Nenhuma alteração aqui) ---
+  // --- LÓGICA DE AUTENTICAÇÃO (INTACTA) ---
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [email, setEmail] = useState('');
@@ -21,7 +24,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (currentUser) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [currentUser, navigate]);
 
@@ -32,56 +35,217 @@ function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-      setError('Falha no login. Verifique suas credenciais.');
+      setError('Credenciais inválidas. Verifique seu e-mail e senha.');
     } finally {
       setIsLoading(false);
     }
   };
-  // --- FIM DA LÓGICA ---
+  // ----------------------------------------
 
-  // --- INÍCIO DA PARTE VISUAL (Tudo foi alterado aqui) ---
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-100">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Login de Acesso</CardTitle>
-          <CardDescription>Entre com suas credenciais para acessar o painel.</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email"
-                placeholder="seuemail@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+
+      {/* 1. NAVBAR: Identidade e Navegação */}
+      <header className="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-slate-900/10 bg-white/95 supports-backdrop-blur:bg-white/60">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2 text-slate-900">
+            <div className="bg-slate-900 p-1.5 rounded-md">
+              <Scale className="h-6 w-6 text-white" />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
-                type="password"
-                placeholder="Sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            {error && <p className="text-sm font-medium text-red-500">{error}</p>}
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? 'Entrando...' : 'Entrar'}
+            <span className="text-xl font-serif font-bold tracking-tight">Escritório (+)</span>
+          </div>
+
+          <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-600">
+            <a href="#" className="hover:text-primary transition-colors">Áreas de Atuação</a>
+            <a href="#" className="hover:text-primary transition-colors">Nossa Equipe</a>
+            <a href="#" className="hover:text-primary transition-colors">Jurisprudência</a>
+          </nav>
+
+          <Button variant="outline" className="hidden md:flex">
+            Fale Conosco
+          </Button>
+        </div>
+      </header>
+
+      {/* 2. HERO SECTION: Apresentação Institucional */}
+      <section className="bg-slate-900 text-white py-20 lg:py-32">
+        <div className="container mx-auto px-6 text-center">
+          <h1 className="text-4xl lg:text-6xl font-serif font-bold mb-6 leading-tight">
+            Defesa estratégica. <br /> Resultados concretos.
+          </h1>
+          <p className="text-lg lg:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
+            Combinamos tradição jurídica com tecnologia de ponta para oferecer soluções ágeis e transparentes para você e sua empresa.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button
+              size="lg"
+              className="bg-white text-slate-900 hover:bg-slate-200"
+              onClick={() => navigate('/pre-atendimento')} /* <-- ESSA LINHA FAZ A MÁGICA */
+            >
+              Iniciar Pré-atendimento
             </Button>
-          </CardFooter>
-        </form>
-      </Card>
+
+            <Button size="lg" variant="outline" className="text-white border-slate-700 hover:bg-slate-800 hover:text-white">
+              Conhecer o Escritório
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. SECTION PORTAL: Informações + Login (A divisão que você pediu) */}
+      <section className="py-20 container mx-auto px-6">
+        <div className="flex flex-col lg:flex-row items-center gap-16">
+
+          {/* ESQUERDA: Informações sobre o Portal */}
+          <div className="lg:w-1/2 space-y-8">
+            <div>
+              <h2 className="text-3xl font-serif font-bold mb-4 text-slate-900">Acesso ao Cliente</h2>
+              <p className="text-slate-600 text-lg">
+                Acesse nossa plataforma exclusiva para acompanhar seus processos em tempo real, visualizar documentos e comunicar-se diretamente com nosso corpo jurídico.
+              </p>
+            </div>
+
+            <div className="grid gap-6">
+              <div className="flex gap-4">
+                <div className="mt-1 bg-primary/10 p-2 rounded-lg h-fit">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Segurança de Dados</h3>
+                  <p className="text-slate-600 text-sm">Seus documentos protegidos com criptografia de ponta a ponta.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="mt-1 bg-primary/10 p-2 rounded-lg h-fit">
+                  <Clock className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Disponibilidade 24/7</h3>
+                  <p className="text-slate-600 text-sm">Consulte o andamento dos seus casos a qualquer hora, de qualquer lugar.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="mt-1 bg-primary/10 p-2 rounded-lg h-fit">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">Atendimento Personalizado</h3>
+                  <p className="text-slate-600 text-sm">Canal direto com o advogado responsável pelo seu caso.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DIREITA: Card de Login */}
+          <div className="lg:w-1/2 w-full flex justify-center lg:justify-end">
+            <Card className="w-full max-w-md shadow-2xl border-slate-200">
+              <CardHeader className="space-y-1 pb-6">
+                <CardTitle className="text-2xl font-bold text-center">Área Restrita</CardTitle>
+                <CardDescription className="text-center">
+                  Identifique-se para acessar o sistema.
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={handleLogin}>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">E-mail Corporativo / CPF</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="nome@exemplo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Senha</Label>
+                      <a href="#" className="text-xs text-primary hover:underline">Esqueceu a senha?</a>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                  {error && (
+                    <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md font-medium">
+                      {error}
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4 pt-2">
+                  <Button className="w-full h-11 text-base" type="submit" disabled={isLoading}>
+                    {isLoading ? 'Autenticando...' : 'Acessar Painel'} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. SECTION PRÉ-ATENDIMENTO: Funcional */}
+      <section id="pre-atendimento" className="bg-slate-100 py-24 border-t border-slate-200">
+        <div className="container mx-auto px-6">
+          {/* Card Funcional de Ação */}
+          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div className="p-8 flex flex-col items-center text-center">
+              <div className="bg-primary/10 p-4 rounded-full mb-6">
+                <Scale className="h-10 w-10 text-primary" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Iniciar Triagem Online</h3>
+              <p className="text-slate-500 mb-8 max-w-md">
+                Preencha o formulário com seus dados e detalhes do caso. Nossa equipe receberá as informações instantaneamente.
+              </p>
+
+              {/* O ELEMENTO REACT QUE DIRECIONA PARA A PÁGINA */}
+              <Button
+                size="lg"
+                className="w-full sm:w-auto px-12 h-12 text-lg shadow-md hover:shadow-xl transition-all"
+                onClick={() => navigate('/pre-atendimento')}
+              >
+                Começar Agora <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Rodapé do card visual */}
+            <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
+              <p className="text-xs text-slate-400">
+                Seus dados estão protegidos pela LGPD.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 5. FOOTER SIMPLES */}
+      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2 text-white">
+            <Scale className="h-5 w-5" />
+            <span className="font-serif font-bold">Escritório (+)</span>
+          </div>
+          <p className="text-sm">
+            &copy; {new Date().getFullYear()} Todos os direitos reservados. OAB/UF 00.000.
+          </p>
+          <div className="flex gap-6 text-sm">
+            <a href="#" className="hover:text-white transition-colors">Privacidade</a>
+            <a href="#" className="hover:text-white transition-colors">Termos</a>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
