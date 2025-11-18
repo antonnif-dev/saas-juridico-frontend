@@ -22,18 +22,20 @@ import AgendaPage from './pages/AgendaPage';
 import AgendaDetailPage from './pages/AgendaDetailPage';
 import EquipePage from './pages/EquipePage';
 import AdminThemePage from './pages/AdminThemePage';
+import PreAtendimentoPage from './pages/PreAtendimentoPage';
+import AtendimentoPage from './pages/AtendimentoPage';
+import PosAtendimentoPage from './pages/PosAtendimentoPage';
+import NotificacaoPage from './pages/NotificacaoPage';
+import MensagensPage from './pages/MensagensPage';
+import ArquivosPage from './pages/ArquivosPage';
 
 function App() {
   //window.auth = auth;  //Função gerar token
   return (
     <Routes>
-      {/* --- ROTAS PÚBLICAS GERAIS --- */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route path="/portal/login" element={<ClientLoginPage />} />
-
-      {/* --- ROTAS PRIVADAS (ADMIN/ADVOGADO) --- */}
-      {/* CORREÇÃO: Estrutura correta de rotas protegidas com layout aninhado */}
       <Route element={<PrivateRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -45,13 +47,16 @@ function App() {
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
           <Route path="/equipe" element={<EquipePage />} />
           <Route path="/admin/tema" element={<AdminThemePage />} />
+          <Route path="/pre-atendimento" element={<PreAtendimentoPage />} />
+          <Route path="/atendimento" element={<AtendimentoPage />} />
+          <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
+          <Route path="/notificacoes" element={<NotificacaoPage />} />
+          <Route path="/mensagens" element={<MensagensPage />} />
+          <Route path="/arquivos" element={<ArquivosPage />} />
         </Route>
       </Route>
-
-      {/* --- ROTAS PRIVADAS DO PORTAL DO CLIENTE --- */}
       <Route element={<PrivateRoute />}>
         <Route path="/portal/dashboard" element={<ClientDashboardPage />} />
-        {/* Futuras rotas do cliente podem ser adicionadas aqui */}
         <Route path="/portal/processos/:id" element={<ClientCaseDetailPage />} />
       </Route>
     </Routes>

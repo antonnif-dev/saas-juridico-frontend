@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
+import NavigationBars from '@/components/shared/NavigationBars';
 import LogoutButton from '@/components/shared/LogoutButton';
 
 function Layout() {
@@ -35,7 +36,8 @@ function Layout() {
           </div>
         </nav>
       </header>
-      <main className="p-5">
+      <NavigationBars />
+      <main className="p-5 pb-24 md:pb-8 md:mx-24 transition-all duration-300">
         <Outlet />
       </main>
     </div>

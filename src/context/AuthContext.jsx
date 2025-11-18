@@ -20,7 +20,6 @@ export function AuthProvider({ children }) {
         try {
           const tokenResult = await user.getIdTokenResult();
           const role = tokenResult.claims.role;
-          console.log(`AuthContext: Perfil (role) do usuário '${user.email}' é '${role}'`);
           setUserRole(role || 'advogado'); // Define 'advogado' se não houver perfil
         } catch (error) {
           console.error("AuthContext: Erro ao buscar o perfil do usuário:", error);

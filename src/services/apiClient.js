@@ -21,7 +21,6 @@ apiClient.interceptors.request.use(
     if (user) {
       try {
         const token = await user.getIdToken();
-        console.log('3. Interceptor ativado. Anexando token ao header.');
         config.headers.Authorization = `Bearer ${token}`;
       } catch (error) {
         console.error("Não foi possível obter o token de autenticação", error);
