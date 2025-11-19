@@ -194,41 +194,6 @@ function LoginPage() {
         </div>
       </section>
 
-      {/* 4. SECTION PRÉ-ATENDIMENTO: Funcional */}
-      <section id="pre-atendimento" className="bg-slate-100 py-24 border-t border-slate-200">
-        <div className="container mx-auto px-6">
-          {/* Card Funcional de Ação */}
-          <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="p-8 flex flex-col items-center text-center">
-              <div className="bg-primary/10 p-4 rounded-full mb-6">
-                <Scale className="h-10 w-10 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Iniciar Triagem Online</h3>
-              <p className="text-slate-500 mb-8 max-w-md">
-                Preencha o formulário com seus dados e detalhes do caso. Nossa equipe receberá as informações instantaneamente.
-              </p>
-
-              {/* O ELEMENTO REACT QUE DIRECIONA PARA A PÁGINA */}
-              <Button
-                size="lg"
-                className="w-full sm:w-auto px-12 h-12 text-lg shadow-md hover:shadow-xl transition-all"
-                onClick={() => navigate('/pre-atendimento')}
-              >
-                Começar Agora <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Rodapé do card visual */}
-            <div className="bg-slate-50 p-4 text-center border-t border-slate-100">
-              <p className="text-xs text-slate-400">
-                Seus dados estão protegidos pela LGPD.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
       {/* 5. FOOTER SIMPLES */}
       <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
