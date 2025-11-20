@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 function PreAtendimentoPage() {
   const { userRole } = useAuth();
@@ -19,6 +20,7 @@ function PreAtendimentoPage() {
   const [successForm, setSuccessForm] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorForm, setErrorForm] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Estados da Lista (Triagem)
   const [leads, setLeads] = useState([]);
@@ -72,20 +74,20 @@ function PreAtendimentoPage() {
 
   const handleTransformar = async (lead) => {
     if (!window.confirm(`Deseja transformar o caso de ${lead.nome} em um Processo?`)) return;
-    
+
     try {
       const response = await apiClient.post(`/preatendimento/${lead.id}/converter`, { data: lead });
-      
+
       // Captura a senha da resposta
       const senha = response.data.tempPassword;
-      
+
       // Exibe no alert
       alert(`SUCESSO!\n\nCliente e Processo criados.\n\nSENHA PROVISÓRIA DO CLIENTE: ${senha}\n\nAnote esta senha e envie para o cliente.`);
-      
+
       fetchLeads();
-    } catch (error) { 
+    } catch (error) {
       console.error(error);
-      alert("Erro ao converter."); 
+      alert("Erro ao converter.");
     }
   };
 
@@ -128,6 +130,45 @@ function PreAtendimentoPage() {
     } finally {
       setLoadingForm(false);
     }
+  };
+
+  const handleSendProposal = async (id, valor) => {
+    if (!valor) return alert("Digite um valor.");
+
+    const notas = document.getElementById(`notes-${id}`).value;
+
+    try {
+      await apiClient.put(`/preatendimento/${id}/proposal`, {
+        proposalValue: valor,
+        proposalStatus: 'sent',
+        adminNotes: notas
+      });
+      fetchLeads();
+    } catch (e) { alert("Erro ao enviar proposta"); }
+  };
+
+  // Função atualizada de Aceitar (Cria cliente)
+  const handleAceitarInicial = async (lead) => {
+    if (!window.confirm("Confirmação 1/2: Deseja aceitar este caso?")) return;
+    if (!window.confirm("Confirmação 2/2: Isso criará o acesso do cliente imediatamente. Confirmar?")) return;
+
+    try {
+      const res = await apiClient.post(`/preatendimento/${lead.id}/accept`, lead);
+      alert(`Cliente criado!\nSenha Provisória: ${res.data.tempPassword}`);
+      fetchLeads();
+    } catch (e) { alert("Erro ao aceitar."); }
+  };
+
+  const handleFileUpload = async (id) => {
+    if (!selectedFile) return alert("Selecione um arquivo.");
+    const formData = new FormData();
+    formData.append('documento', selectedFile);
+
+    try {
+      await apiClient.post(`/preatendimento/${id}/upload`, formData);
+      alert("Arquivo enviado com sucesso!");
+      fetchLeads();
+    } catch (e) { alert("Erro no upload."); }
   };
 
   //Prencher todos os campos. #verificar
@@ -216,8 +257,8 @@ function PreAtendimentoPage() {
         <div className="flex flex-col items-center justify-center py-10 text-center text-green-600">
           <CheckCircle2 className="w-16 h-16 mb-4" />
           <h3 className="text-2xl font-bold">Sucesso!</h3>
-          <p>Solicitação registrada.</p>          
-          <Button 
+          <p>Solicitação registrada.</p>
+          <Button
             onClick={() => {
               if (isAdmin) {
                 setSuccessForm(false);
@@ -225,7 +266,7 @@ function PreAtendimentoPage() {
               } else {
                 window.location.href = '/login';
               }
-            }} 
+            }}
             className="btn-primary mt-8 w-auto px-8"
           >
             {isAdmin ? 'Novo Cadastro' : 'Voltar ao Início'}
@@ -450,13 +491,12 @@ function PreAtendimentoPage() {
   // --- RENDERIZAÇÃO ---
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
-      
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Central de Pré-Atendimento</h1>
           <p className="text-slate-500">Gestão e triagem de novas solicitações.</p>
         </div>
-        
+
         {/* Botão "+" aparece APENAS para Admin/Advogado */}
         {isAdmin && (
           <Button onClick={() => setIsModalOpen(true)} className="btn-primary">
@@ -469,7 +509,7 @@ function PreAtendimentoPage() {
       {isAdmin ? (
         <>
           <div className="space-y-6">
-            
+
             {/* Bloco Informativo Admin */}
             <div className="border-2 border-dashed border-blue-300 bg-blue-50 p-6 rounded-lg">
               <div className="flex items-center gap-2 mb-2 text-blue-800">
@@ -483,7 +523,7 @@ function PreAtendimentoPage() {
 
             {/* LISTA DE DADOS RECEBIDOS (O que estava faltando) */}
             <h2 className="text-xl font-bold text-slate-700 border-b pb-2">Fila de Solicitações</h2>
-            
+
             {loadingList ? <p>Carregando fila...</p> : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {leads.map(lead => (
@@ -497,38 +537,122 @@ function PreAtendimentoPage() {
                         {lead.status}
                       </Badge>
                     </CardHeader>
-                    
-                    <CardContent className="space-y-2 text-sm">
-                      <p><span className="font-semibold">Categoria:</span> {lead.categoria}</p>
-                      <div className="bg-slate-50 p-3 rounded-md italic text-slate-600">
-                        "{lead.resumoProblema}"
+
+                    <CardContent className="space-y-4">
+                      <div className="text-sm space-y-1 border-b pb-2">
+                        <p><strong>Categoria:</strong> {lead.categoria}</p>
+                        <p className="italic">"{lead.resumoProblema}"</p>
                       </div>
-                      <p className="text-xs text-muted-foreground pt-2">
-                        Recebido em: {lead.createdAt?._seconds ? new Date(lead.createdAt._seconds * 1000).toLocaleDateString() : 'Hoje'}
-                      </p>
+
+                      {/* --- ÁREA DE NEGOCIAÇÃO (Visível se status for 'Em Negociacao') --- */}
+                      {lead.status === 'Em Negociacao' && (
+                        <div className="bg-slate-50 p-4 rounded-md border border-slate-200 space-y-4">
+                          <h4 className="font-bold text-blue-900 text-sm">Painel de Negociação</h4>
+
+                          {/* 1. Observações (NOVO) */}
+                          <div>
+                            <label className="text-xs font-semibold">Instruções/Observações para o Cliente:</label>
+                            <textarea
+                              id={`notes-${lead.id}`} // ID único para pegar o valor
+                              className="textarea-base w-full h-20 mt-1 text-sm"
+                              placeholder="Descreva detalhes da proposta, formas de pagamento ou instruções..."
+                              defaultValue={lead.adminNotes} // Mostra o que já foi salvo, se houver
+                              disabled={lead.proposalStatus === 'sent' || lead.proposalStatus === 'accepted'}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="mt-2"
+                              onClick={async () => {
+                                const notas = document.getElementById(`notes-${lead.id}`).value;
+                                await apiClient.put(`/preatendimento/${lead.id}/proposal`, { adminNotes: notas });
+                                alert("Observações salvas.");
+                              }}
+                            >
+                              Salvar Observações
+                            </Button>
+                          </div>
+
+                          {/* 2. Envio de Arquivos */}
+                          <div>
+                            <label className="text-xs font-semibold">Anexar Documentos/Minutas:</label>
+                            <div className="flex gap-2 mt-1">
+                              <Input type="file" className="h-8 text-xs" onChange={(e) => setSelectedFile(e.target.files[0])} />
+                              <Button size="sm" variant="outline" onClick={() => handleFileUpload(lead.id)}>Enviar</Button>
+                            </div>
+                          </div>
+
+                          {/* 3. Valor da Proposta */}
+                          <div>
+                            <label className="text-xs font-semibold">Valor dos Honorários (R$):</label>
+                            <div className="flex gap-2 mt-1">
+                              <Input
+                                type="number"
+                                placeholder="0,00"
+                                disabled={lead.proposalStatus === 'sent' || lead.proposalStatus === 'accepted'}
+                                defaultValue={lead.proposalValue}
+                                id={`valor-${lead.id}`}
+                              />
+                              {lead.proposalStatus === 'sent' ? (
+                                <Button size="sm" variant="ghost" className="text-green-600 border border-green-200 bg-green-50" disabled>
+                                  Enviado (Aguardando)
+                                </Button>
+                              ) : lead.proposalStatus === 'accepted' ? (
+                                <Button size="sm" variant="ghost" className="text-green-700 font-bold border border-green-600 bg-green-100" disabled>
+                                  Aprovado!
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSendProposal(lead.id, document.getElementById(`valor-${lead.id}`).value)}
+                                >
+                                  Enviar Proposta
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 4. Status dos Arquivos do Cliente */}
+                          <div className="text-xs text-slate-500 pt-2 border-t border-slate-200">
+                            <p>Arquivos do Cliente: {lead.clientFiles?.length || 0} anexados.</p>
+                            {lead.signature ? (
+                              <p className="text-green-600 font-bold flex items-center gap-1">
+                                <Check className="w-3 h-3" /> Assinado por: {lead.signature}
+                              </p>
+                            ) : (
+                              <p>Aguardando assinatura.</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
 
-                    <CardFooter className="flex justify-end gap-2 pt-0">
+                    <CardFooter className="flex flex-col gap-2 items-end pt-2">
+                      {/* Botões iniciais (Pendente) */}
                       {lead.status === 'Pendente' && (
-                        <>
-                          <Button variant="destructive" size="sm" onClick={() => handleRecusar(lead.id)}>
-                            <X className="mr-1 h-4 w-4" /> Recusar
-                          </Button>
-                          <Button size="sm" onClick={() => handleAceitar(lead.id)}>
-                            <Check className="mr-1 h-4 w-4" /> Aceitar
-                          </Button>
-                        </>
+                        <div className="flex gap-2">
+                          <Button variant="destructive" onClick={() => handleRecusar(lead.id)}>Recusar</Button>
+                          <Button onClick={() => handleAceitarInicial(lead)}>Aceitar e Criar Cliente</Button>
+                        </div>
                       )}
-                      {lead.status === 'Em Análise' && (
-                        <>
-                           <Button variant="outline" size="sm" onClick={() => handleRecusar(lead.id)}>Excluir</Button>
-                           <Button className="bg-green-600 hover:bg-green-700" size="sm" onClick={() => handleTransformar(lead)}>
-                             <FileText className="mr-1 h-4 w-4" /> Gerar Processo
-                           </Button>
-                        </>
+
+                      {/* --- BOTÃO DE TRANSFORMAR EM PROCESSO (NOVO) --- */}
+                      {/* Só aparece se: Status Negociação + Cliente Aceitou + Tem Assinatura #verificar */}
+                      {/* {lead.status === 'Em Negociacao' && lead.proposalStatus === 'accepted' && lead.signature && ( */}
+                      {lead.status === 'Em Negociacao' && (
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700 text-white shadow-md animate-in zoom-in"
+                          onClick={() => handleTransformar(lead)}
+                        >
+                          <FileText className="mr-2 h-4 w-4" /> Aprovar e Gerar Processo
+                        </Button>
                       )}
+
+                      {/* Status Final */}
                       {lead.status === 'Convertido' && (
-                         <Button variant="ghost" size="sm" disabled>Processo Criado</Button>
+                        <Button variant="ghost" size="sm" disabled className="w-full border-green-200 bg-green-50 text-green-800">
+                          ✓ Processo Criado
+                        </Button>
                       )}
                     </CardFooter>
                   </Card>
@@ -550,8 +674,8 @@ function PreAtendimentoPage() {
           </Dialog>
         </>
       ) : (
-        
-      /* --- CENÁRIO 2: PÚBLICO (VÊ O FORMULÁRIO DIRETO NA TELA) --- */
+
+        /* --- CENÁRIO 2: PÚBLICO (VÊ O FORMULÁRIO DIRETO NA TELA) --- */
         <Card className="border-slate-200 shadow-md">
           <CardHeader>
             <CardTitle>Novo Pré-Atendimento</CardTitle>

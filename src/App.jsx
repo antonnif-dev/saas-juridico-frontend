@@ -28,6 +28,7 @@ import PosAtendimentoPage from './pages/PosAtendimentoPage';
 import NotificacaoPage from './pages/NotificacaoPage';
 import MensagensPage from './pages/MensagensPage';
 import ArquivosPage from './pages/ArquivosPage';
+import ClientTriagemPage from './pages/client/ClientTriagemPage';
 
 function App() {
   //window.auth = auth;  //Função gerar token
@@ -59,6 +60,7 @@ function App() {
       <Route element={<PrivateRoute />}>
         <Route path="/portal/dashboard" element={<ClientDashboardPage />} />
         <Route path="/portal/processos/:id" element={<ClientCaseDetailPage />} />
+        <Route path="/portal/negociacao/:id" element={<ClientTriagemPage />} />
       </Route>
     </Routes>
   );

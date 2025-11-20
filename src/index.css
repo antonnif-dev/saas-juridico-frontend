@@ -1,34 +1,52 @@
 @import "tailwindcss";
-@import "./styles/forms.css";
 
+/* ==========================================================================
+   1. ESTILOS GLOBAIS E VARIÁVEIS
+   ========================================================================== */
 :root {
+  /* --- Cores Base --- */
   --cor-fundo: #f4f7f9;
   --cor-fundo-card: #ffffff;
+  
+  /* --- Texto --- */
   --cor-texto-primario: #1a202c;
   --cor-texto-secundario: #718096;
+  
+  /* --- Ações / Destaques --- */
   --cor-primaria: #4299e1;
   --cor-primaria-hover: #2b6cb0;
   --cor-destrutiva: #e53e3e;
   --cor-destrutiva-hover: #c53030;
+  
+  /* --- Estrutura --- */
   --cor-borda: #e2e8f0;
   --raio-borda: 0.5rem;
   --sombra-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 
-  --cor-navbar-fundo: var(--cor-fundo-card);
-  --cor-navbar-texto: var(--cor-texto-primario);
+  /* --- Tema Dinâmico (Header e Sidebar) --- */
+  /* Navbar = Cabeçalho Superior */
+  --cor-navbar-fundo: #ffffff; 
+  --cor-navbar-texto: #1a202c;
+  
+  /* Footer = Barra Lateral ou Inferior */
   --cor-footer-fundo: #1a202c;
   --cor-footer-texto: #f4f7f9;
+  --cor-footer-ativo: #4299e1; /* Cor do ícone ativo na sidebar */
 
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* --- Tipografia --- */
   --font-familia: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --font-size-base: 14px; /* Tamanho do texto normal (parágrafos) */
-  --font-size-h1: 1.7rem;  /* Títulos de página (ex: "Dashboard") */
-  --font-size-h2: 1.5rem;   /* Subtítulos (ex: "Próximos Compromissos") */
+  --font-size-base: 14px;
+  --font-size-h1: 1.7rem;
+  --font-size-h2: 1.5rem;
   --font-size-h3: 1rem;
+  
   line-height: 1.5;
   font-weight: 400;
 }
 
+/* ==========================================================================
+   2. RESET E BASE
+   ========================================================================== */
 body {
   margin: 0;
   background-color: var(--cor-fundo);
@@ -39,19 +57,17 @@ body {
   font-weight: 400;
 }
 
-h1 { font-size: var(--font-size-h1); }
-h2 { font-size: var(--font-size-h2); }
-h3 { font-size: var(--font-size-h3); }
+h1 { font-size: var(--font-size-h1); font-weight: 700; margin-bottom: 1rem; }
+h2 { font-size: var(--font-size-h2); font-weight: 600; margin-bottom: 0.75rem; }
+h3 { font-size: var(--font-size-h3); font-weight: 600; margin-bottom: 0.5rem; }
 
 a {
-  color: black;
+  color: inherit; /* Herda a cor do pai para evitar conflitos no menu */
   text-decoration: none;
   transition: color 0.2s;
 }
-
 a:hover {
-  color: white;
-  text-decoration: none;
+  color: var(--cor-primaria);
 }
 
 hr {
@@ -59,6 +75,57 @@ hr {
   border-top: 1px solid var(--cor-borda);
   margin: 2rem 0;
 }
+
+/* ==========================================================================
+   3. COMPONENTES DE LAYOUT (NOVO - CONECTANDO AO TEMA)
+   ========================================================================== */
+
+/* Header Superior */
+header {
+  background-color: var(--cor-navbar-fundo);
+  color: var(--cor-navbar-texto);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+header a {
+  color: var(--cor-navbar-texto);
+}
+header a:hover {
+  opacity: 0.7;
+}
+
+/* Barra Lateral (Desktop) */
+aside {
+  background-color: var(--cor-footer-fundo);
+  color: var(--cor-footer-texto);
+  border-right: 1px solid var(--cor-borda);
+}
+
+/* Barra Inferior (Mobile) */
+nav.mobile-bottom-bar {
+  background-color: var(--cor-footer-fundo);
+  color: var(--cor-footer-texto);
+  border-top: 1px solid var(--cor-borda);
+}
+
+/* Links da Sidebar/Bottombar */
+.nav-item {
+  color: var(--cor-footer-texto);
+  opacity: 0.7;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.nav-item:hover {
+  opacity: 1;
+  background-color: rgba(255,255,255, 0.1);
+}
+.nav-item.active {
+  opacity: 1;
+  color: var(--cor-footer-ativo); /* Destaque para item ativo */
+}
+
+/* ==========================================================================
+   4. COMPONENTES UI (Mantendo seu estilo atual)
+   ========================================================================== */
 
 .btn {
   display: inline-block;
@@ -72,18 +139,13 @@ hr {
   transition: all 0.2s ease-in-out;
   width: 100%;
 }
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-primary {
   color: #fff;
   background-color: var(--cor-primaria);
   border-color: var(--cor-primaria);
 }
-
 .btn-primary:hover {
   background-color: var(--cor-primaria-hover);
   border-color: var(--cor-primaria-hover);
@@ -94,26 +156,19 @@ hr {
   background-color: transparent;
   border-color: var(--cor-borda);
 }
-
-.btn-outline:hover {
-  background-color: var(--cor-fundo);
-}
+.btn-outline:hover { background-color: rgba(0,0,0,0.05); }
 
 .btn-destructive {
   color: #fff;
   background-color: var(--cor-destrutiva);
   border-color: var(--cor-destrutiva);
 }
-
 .btn-destructive:hover {
   background-color: var(--cor-destrutiva-hover);
   border-color: var(--cor-destrutiva-hover);
 }
 
-.btn-sm {
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-}
+.btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; }
 
 .card {
   background-color: var(--cor-fundo-card);
@@ -121,32 +176,12 @@ hr {
   border-radius: var(--raio-borda);
   box-shadow: var(--sombra-card);
 }
+.card-header, .card-content, .card-footer { padding: 1.5rem; }
+.card-header { border-bottom: 1px solid var(--cor-borda); }
+.card-title { font-size: 1.25rem; font-weight: 600; margin: 0; }
+.card-description { color: var(--cor-texto-secundario); font-size: 0.875rem; margin-top: 0.25rem; }
 
-.card-header,
-.card-content,
-.card-footer {
-  padding: 1.5rem;
-}
-
-.card-header {
-  border-bottom: 1px solid var(--cor-borda);
-}
-
-.card-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.card-description {
-  color: var(--cor-texto-secundario);
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-.form-input,
-.form-select,
-.form-textarea {
+.form-input, .form-select, .form-textarea {
   display: block;
   width: 100%;
   padding: 0.5rem 0.75rem;
@@ -158,119 +193,43 @@ hr {
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
-
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
+.form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
   border-color: var(--cor-primaria);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.3);
 }
+.form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+.form-group { margin-bottom: 1.25rem; }
 
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
+/* --- Utilitários de Layout --- */
+.page-container { padding: 2rem; }
+.page-title { font-size: 2.25rem; font-weight: 700; margin-top: 0; }
+.login-container { display: flex; align-items: center; justify-content: center; min-h: 100vh; }
+.login-card { width: 100%; max-width: 400px; }
 
-.form-group {
-  margin-bottom: 1.25rem;
-}
+/* --- Tabelas --- */
+.table { width: 100%; border-collapse: collapse; text-align: left; }
+.table th, .table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--cor-borda); }
+.table th { font-weight: 600; color: var(--cor-texto-secundario); }
+.table tbody tr:hover { background-color: rgba(0,0,0,0.02); }
 
-/* --- Container Principal --- */
-.page-container {
-  padding: 2rem;
-}
-
-.page-title {
-  font-size: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  margin-top: 0;
-}
-
-/* --- Página de Login --- */
-.login-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-}
-
-/* --- Dashboard --- */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin: 2rem 0;
-}
-
-.stat-card-value {
-  font-size: 2.5rem;
-  font-weight: 700;
-}
-
-/* --- Lista de Compromissos / Tabela --- */
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.table th,
-.table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--cor-borda);
-}
-
-.table th {
-  font-weight: 600;
-  color: var(--cor-texto-secundario);
-}
-
-.table tbody tr:hover {
-  background-color: var(--cor-fundo);
-}
-
-/* --- Agenda (Modal) --- */
+/* --- Modal --- */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(15, 23, 42, 0.7);
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px);
 }
-
 .modal-content {
-  background: white;
+  background: var(--cor-fundo-card);
   padding: 2rem;
   border-radius: var(--raio-borda);
-  max-width: 500px;
-  width: 90%;
+  max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;
 }
-
 .modal-footer {
-  margin-top: 1.5rem;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
+  margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end;
 }
+.modal-footer .btn { width: auto; }
 
-.modal-footer .btn {
-  width: auto;
-}
-
-.calendario {
-  width: 100px;
-  height: 100px;
-}
+.calendario { width: 100px; height: 100px; }

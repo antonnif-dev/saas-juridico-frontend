@@ -1,24 +1,37 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '@/services/apiClient';
 import CreateAdvogadoForm from '@/components/users/CreateAdvogadoForm';
 import EditAdvogadoForm from "@/components/users/EditAdvogadoForm";
-import apiClient from '@/services/apiClient';
+
+// UI Components
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Search, SlidersHorizontal, Mail, Shield, X, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function EquipePage() {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Estados de controle
+  const [showFilters, setShowFilters] = useState(false);
+  const [search, setSearch] = useState('');
   const [userToEdit, setUserToEdit] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await apiClient.get('/users/advogados');
+      const response = await apiClient.get('/users/advogados'); 
       setUsers(response.data);
+      setFilteredUsers(response.data);
     } catch (err) {
       setError('Não foi possível carregar os usuários.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -28,56 +41,106 @@ function EquipePage() {
     fetchUsers();
   }, []);
 
-  const handleUserCreated = (newUser) => {
+  // Filtragem
+  useEffect(() => {
+    if (search) {
+      const term = search.toLowerCase();
+      setFilteredUsers(users.filter(u => u.name?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term)));
+    } else {
+      setFilteredUsers(users);
+    }
+  }, [search, users]);
+
+  const handleUserCreated = () => {
+    setIsCreateModalOpen(false);
     fetchUsers();
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-10">
-      <div className="lg:w-2/5">
-        <div className=' flex flex-col justify-center'>
-          <h1 className="text-3xl font-bold tracking-tight">Gestão de Equipe</h1>
-          <p className="text-muted-foreground">Adicione e gerencie os advogados do seu escritório.</p>
+    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
+      
+      {/* SIDEBAR */}
+      <aside className={`bg-white border-r border-slate-200 p-6 w-full h-auto md:w-80 md:h-screen md:sticky md:top-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-bold text-lg flex items-center gap-2"><SlidersHorizontal className="w-5 h-5 text-primary"/> Filtros</h2>
+          <Button variant="ghost" size="icon" onClick={() => setShowFilters(false)} className="md:hidden"><X className="h-4 w-4" /></Button>
         </div>
-        <div className='flex justify-center'>
-          <CreateAdvogadoForm onUserCreated={handleUserCreated} />
+        <div className="relative">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar advogado..." className="pl-8" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-      </div>
+      </aside>
 
-      <div className="lg:w-3/5">
-        {userToEdit ? (
+      {/* CONTEÚDO */}
+      <main className="flex-1 p-4 md:p-8 w-full">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <h2 className="text-2xl font-bold mb-4">Editando: {userToEdit.name}</h2>
-            <EditAdvogadoForm
-              user={userToEdit} // Passa os dados do usuário para o formulário
-              onEditComplete={() => { // Função para o form avisar que terminou
-                setUserToEdit(null); // Volta para a lista
-                fetchUsers(); // Atualiza os dados
-              }}
-              onCancel={() => setUserToEdit(null)}
-            />
+            <h1 className="text-3xl font-bold text-slate-900">Gestão de Equipe</h1>
+            <p className="text-slate-500">Gerencie os advogados do escritório.</p>
           </div>
-        ) : (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Advogados Cadastrados</h2>
-            {loading && <p>Carregando...</p>}
-            {error && <p className="text-destructive">{error}</p>}
-            <div className="space-y-4">
-              {users.map(user => (
-                <div key={user.uid} className="flex justify-between items-center p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+          
+          <div className="flex gap-3 w-full sm:w-auto">
+             <Button variant="outline" className="md:hidden flex-1" onClick={() => setShowFilters(!showFilters)}>
+              <SlidersHorizontal className="mr-2 h-4 w-4" /> Filtrar
+            </Button>
+            
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex-1 sm:flex-none">Novo Advogado</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Cadastrar Advogado</DialogTitle></DialogHeader>
+                <CreateAdvogadoForm onUserCreated={handleUserCreated} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {loading ? <p>Carregando...</p> : error ? <p className="text-red-500">{error}</p> : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredUsers.map(user => (
+              <Card key={user.uid} className="border-t-4 border-t-primary shadow-sm hover:shadow-md">
+                <CardHeader className="flex flex-row items-center gap-4 pb-2">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                    {user.name.charAt(0)}
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setUserToEdit(user)}>
-                    Editar
+                  <div>
+                    <CardTitle className="text-lg">{user.name}</CardTitle>
+                    <Badge variant="outline" className="mt-1 text-xs">Advogado</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Mail className="h-4 w-4 text-primary" /> {user.email}
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Shield className="h-4 w-4 text-primary" /> Acesso Total
+                  </div>
+                </CardContent>
+                <CardFooter className="pt-2 border-t bg-slate-50/50">
+                  <Button variant="ghost" className="w-full hover:bg-white" onClick={() => setUserToEdit(user)}>
+                    <Edit className="mr-2 h-4 w-4" /> Editar Perfil
                   </Button>
-                </div>
-              ))}
-            </div>
+                </CardFooter>
+              </Card>
+            ))}
           </div>
         )}
-      </div>
+      </main>
+
+      {/* Modal de Edição (separado para não poluir o grid) */}
+      {userToEdit && (
+        <Dialog open={!!userToEdit} onOpenChange={() => setUserToEdit(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Editar Advogado</DialogTitle></DialogHeader>
+            <EditAdvogadoForm 
+              user={userToEdit} 
+              onEditComplete={() => { setUserToEdit(null); fetchUsers(); }} 
+              onCancel={() => setUserToEdit(null)} 
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
