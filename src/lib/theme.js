@@ -1,36 +1,39 @@
+// Mapeia as chaves do banco de dados para as variáveis CSS EXATAS do seu index.css
 const themeMap = {
-  // Cores Gerais
-  corFundo: '--background', 
-  corFundoCard: '--card',
-  corTextoPrimario: '--foreground',
-  corTextoSecundario: '--muted-foreground', // Texto adicional
-  corPrimaria: '--primary',
-  corBorda: '--border',
+  // Cores Principais
+  corPrimaria: '--cor-primaria',
+  corFundo: '--cor-fundo',
+  corFundoCard: '--cor-fundo-card',
+  corTextoPrimario: '--cor-texto-primario',
+  corTextoSecundario: '--cor-texto-secundario',
+  corBorda: '--cor-borda',
 
-  // Cabeçalho
-  headerBg: '--header-bg',
-  headerText: '--header-text',
-  headerLogoSize: '--header-logo-size',
-
-  // Barra Lateral/Inferior
-  sidebarBg: '--sidebar-bg',
-  sidebarText: '--sidebar-text',
-  sidebarActive: '--sidebar-active',
+  // Componentes Específicos
+  corNavbarFundo: '--cor-navbar-fundo',
+  corNavbarTexto: '--cor-navbar-texto',
+  corFooterFundo: '--cor-footer-fundo',
+  corFooterTexto: '--cor-footer-texto',
   
   // Tipografia
-  fontFamilia: 'font-family',
+  fontFamilia: '--font-familia', // Note que no seu CSS você usa uma variável para a fonte
+  fontSizeBase: '--font-size-base',
+  fontSizeH1: '--font-size-h1',
+  fontSizeH2: '--font-size-h2',
+  fontSizeH3: '--font-size-h3',
 };
 
-const hexToHSL = (hex) => {
-  return hex; 
-};
-
+/**
+ * Aplica um objeto de tema às variáveis CSS do documento.
+ */
 export const applyTheme = (theme) => {
+  if (!theme) return;
+  
   const root = document.documentElement;
   
   Object.keys(theme).forEach(key => {
     const cssVar = themeMap[key];
-    if (cssVar) {
+    if (cssVar && theme[key]) {
+      // Aplica o valor diretamente na raiz do HTML
       root.style.setProperty(cssVar, theme[key]);
     }
   });

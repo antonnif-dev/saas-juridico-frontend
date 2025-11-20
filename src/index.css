@@ -36,8 +36,8 @@
   /* --- Tipografia --- */
   --font-familia: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   --font-size-base: 14px;
-  --font-size-h1: 1.7rem;
-  --font-size-h2: 1.5rem;
+  --font-size-h1: 1.6rem;
+  --font-size-h2: 1.4rem;
   --font-size-h3: 1rem;
   
   line-height: 1.5;

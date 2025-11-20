@@ -8,6 +8,34 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const defaultSettings = {
+  // Cores Base
+  corPrimaria: '#4299e1',
+  corFundo: '#f4f7f9',
+  corFundoCard: '#ffffff',
+  corBorda: '#e2e8f0',
+
+  // Texto
+  corTextoPrimario: '#1a202c',
+  corTextoSecundario: '#718096',
+
+  // Componentes
+  corNavbarFundo: '#ffffff',
+  corNavbarTexto: '#1a202c',
+  corFooterFundo: '#1a202c',
+  corFooterTexto: '#f4f7f9',
+
+  // Tipografia
+  fontFamilia: 'Inter, system-ui, sans-serif',
+  fontSizeBase: '14px',
+  fontSizeH1: '1.7rem',
+  fontSizeH2: '1.5rem',
+
+  // Header
+  headerType: 'text',
+  headerLogoSize: '1.7rem'
+};
+
 function AdminThemePage() {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
@@ -88,6 +116,57 @@ function AdminThemePage() {
     </div>
   );
 
+  const handleReset = async () => {
+    if (!window.confirm("Tem certeza? Isso apagará todas as personalizações e voltará ao padrão original.")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Atualiza o estado visual imediatamente
+      setSettings(defaultSettings);
+      applyTheme(defaultSettings);
+
+      // 2. Salva o padrão no banco de dados (sobrescrevendo o personalizado)
+      await apiClient.put('/theme', defaultSettings);
+
+      alert("Tema resetado para o padrão com sucesso!");
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao resetar tema.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Feedback visual rápido
+    const tempUrl = URL.createObjectURL(file);
+    // Atualiza o estado para mostrar o preview imediatamente (opcional)
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    try {
+      // Mostra algum loading se quiser, ou usa o botão disabled
+      const response = await apiClient.post('/theme/upload-logo', formData);
+
+      // O backend retorna { url: '...' }
+      const novaUrl = response.data.url;
+
+      // Atualiza o estado principal 'settings' com a nova URL
+      handleChange('logoUrl', novaUrl);
+
+      alert("Logo enviado com sucesso!");
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao enviar imagem.");
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
@@ -95,7 +174,22 @@ function AdminThemePage() {
           <h1 className="text-3xl font-bold tracking-tight">Aparência do Site</h1>
           <p className="text-muted-foreground">Personalize cores, layout e tipografia.</p>
         </div>
-        <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">Salvar Alterações</Button>
+
+        <div className="flex gap-2">
+          {/* Botão de Reset */}
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            Resetar Padrão
+          </Button>
+
+          {/* Botão de Salvar */}
+          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
+            Salvar Alterações
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="geral" className="w-full">
@@ -128,7 +222,7 @@ function AdminThemePage() {
                   </div>
                   <div className="space-y-2 col-span-1 md:col-span-2">
                     <Label>Família da Fonte</Label>
-                    <Select value={settings.fontFamilia} onValueChange={(v) => handleChange('fontFamilia', v)}>
+                    <Select value={settings.fontFamilia} onValueChange={(val) => handleChange('fontFamilia', val)}>
                       <SelectTrigger><SelectValue placeholder="Selecione a fonte" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Inter, sans-serif">Padrão (Inter)</SelectItem>
@@ -177,16 +271,31 @@ function AdminThemePage() {
 
               {settings.headerType === 'image' ? (
                 <div className="form-group">
-                  <Label>URL da Imagem da Logo</Label>
-                  <Input
-                    type="text"
-                    name="logoUrl"
-                    placeholder="Ex: https://meusite.com/logo.png"
-                    value={settings.logoUrl || ''}
-                    onChange={(e) => handleChange('logoUrl', e.target.value)}
-                    className="form-input"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Cole o link direto da sua imagem.</p>
+                  <Label>Upload da Logomarca</Label>
+
+                  <div className="flex items-center gap-4 mt-2">
+                    {settings.logoUrl && (
+                      <div className="border p-2 rounded bg-gray-50">
+                        <img
+                          src={settings.logoUrl}
+                          alt="Logo Atual"
+                          className="h-12 object-contain"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex-1">
+                      <Input
+                        type="file"
+                        accept="image/png, image/jpeg, image/svg+xml"
+                        onChange={handleLogoUpload}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Formatos aceitos: PNG, JPG, SVG. Fundo transparente recomendado.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="form-group">
@@ -203,20 +312,45 @@ function AdminThemePage() {
                 </div>
               )}
 
-              <div className="form-group mt-4">
-                <Label>Tamanho do Logo/Texto</Label>
-                <select
-                  name="headerLogoSize"
-                  value={settings.headerLogoSize || '1.7rem'}
-                  onChange={(e) => handleChange('headerLogoSize', e.target.value)}
-                  className="form-select"
-                >
-                  <option value="1.2rem">Pequeno</option>
-                  <option value="1.7rem">Médio (Padrão)</option>
-                  <option value="2.2rem">Grande</option>
-                  <option value="3rem">Extra Grande</option>
-                </select>
-              </div>
+              {/* --- SELEÇÃO DE ESTILO (CONDICIONAL) --- */}
+
+              {/* 1. Se for TEXTO: Mostra seletor de Tamanho da Fonte */}
+              {settings.headerType === 'text' && (
+                <div className="form-group mt-4 pt-4 border-t">
+                  <Label>Tamanho do Texto</Label>
+                  <select
+                    name="headerLogoSize"
+                    value={settings.headerLogoSize || '1.7rem'}
+                    onChange={(e) => handleChange('headerLogoSize', e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="1.2rem">Pequeno</option>
+                    <option value="1.4rem">Médio (Padrão)</option>
+                    <option value="1.5rem">Grande</option>
+                    <option value="1.6rem">Extra Grande</option>
+                  </select>
+                </div>
+              )}
+
+              {/* 2. Se for IMAGEM: Mostra seletor de Formato (Estilização) */}
+              {settings.headerType === 'image' && (
+                <div className="form-group mt-4 pt-4 border-t">
+                  <Label>Estilização da Imagem (Tamanho fixo: 60px)</Label>
+                  <select
+                    name="headerLogoShape" // Nova configuração: 'headerLogoShape'
+                    value={settings.headerLogoShape || 'square'}
+                    onChange={(e) => handleChange('headerLogoShape', e.target.value)}
+                    className="form-select"
+                  >
+                    <option value="square">Quadrado (Padrão)</option>
+                    <option value="rounded">Quadrado com bordas arredondadas</option>
+                    <option value="circle">Redondo</option>
+                    <option value="triangle">Triangular</option>
+                    <option value="diamond">Losangular</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">A imagem será automaticamente recortada para caber no formato.</p>
+                </div>
+              )}
 
             </div>
           </div>

@@ -21,7 +21,7 @@ const NavigationBars = () => {
   ];
 
   const rightGroup = [
-    { to: "/notificacoes", icon: Bell, label: "Alertas" },
+    { to: "/notificacoes", icon: Bell, label: "Notificações" },
     { to: "/mensagens", icon: MessageSquare, label: "Mensagens" },
     { to: "/arquivos", icon: FolderOpen, label: "Arquivos" },
   ];
@@ -59,11 +59,11 @@ const NavigationBars = () => {
       </aside>
 
       {/* --- MOBILE: BARRA INFERIOR DIVIDIDA --- */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/90 backdrop-blur-lg border-t border-slate-200 z-50 px-4 pb-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-md border-r border-slate-200 z-50 px-4 pb-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex justify-between items-center h-full w-full max-w-md mx-auto">
           
           {/* Grupo Esquerdo */}
-          <div className="flex gap-4">
+          <div className="flex gap-5">
             {leftGroup.map((item) => <NavItem key={item.to} item={item} mobile />)}
           </div>
 
@@ -71,7 +71,7 @@ const NavigationBars = () => {
           <div className="h-8 w-px bg-slate-300 mx-2" />
 
           {/* Grupo Direito */}
-          <div className="flex gap-4">
+          <div className="flex gap-5">
             {rightGroup.map((item) => <NavItem key={item.to} item={item} mobile />)}
           </div>
 
