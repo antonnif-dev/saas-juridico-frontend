@@ -47,7 +47,8 @@ function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
           <Route path="/equipe" element={<EquipePage />} />
-          <Route path="/admin/tema" element={<AdminThemePage />} />          
+          <Route path="/admin/tema" element={<AdminThemePage />} />
+          <Route path="/triagem" element={<PreAtendimentoPage />} />        
           <Route path="/atendimento" element={<AtendimentoPage />} />
           <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
           <Route path="/notificacoes" element={<NotificacaoPage />} />

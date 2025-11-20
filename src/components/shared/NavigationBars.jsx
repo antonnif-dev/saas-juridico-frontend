@@ -15,7 +15,7 @@ const NavigationBars = () => {
 
   // Definição dos grupos de links
   const leftGroup = [
-    { to: "/pre-atendimento", icon: FileText, label: "Pré" },
+    { to: "/triagem", icon: FileText, label: "Pré" },
     { to: "/atendimento", icon: Scale, label: "Atendimento" },
     { to: "/pos-atendimento", icon: CheckCircle, label: "Pós" },
   ];

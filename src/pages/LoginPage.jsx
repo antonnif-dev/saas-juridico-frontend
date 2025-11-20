@@ -55,13 +55,13 @@ function LoginPage() {
             <span className="text-xl font-serif font-bold tracking-tight">Escritório (+)</span>
           </div>
 
-          <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-600">
+          <nav className="flex justify-center gap-2 md:gap-16 text-sm font-medium text-slate-600">
             <a href="#" className="hover:text-primary transition-colors">Áreas de Atuação</a>
             <a href="#" className="hover:text-primary transition-colors">Nossa Equipe</a>
             <a href="#" className="hover:text-primary transition-colors">Jurisprudência</a>
           </nav>
 
-          <Button variant="outline" className="hidden md:flex">
+          <Button variant="outline" className="flex items-end">
             Fale Conosco
           </Button>
         </div>
