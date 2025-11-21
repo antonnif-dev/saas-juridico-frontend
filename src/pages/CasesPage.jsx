@@ -14,7 +14,7 @@ import { SlidersHorizontal, Search, X, FileText, DollarSign, AlertTriangle } fro
 // Componente auxiliar para os inputs de filtro
 const FilterSelect = ({ label, value, onChange, options, placeholder }) => (
   <div className="space-y-1">
-    <Label className="text-xs font-semibold text-slate-500 uppercase">{label}</Label>
+    <Label className="text-xs font-semibold text-white uppercase">{label}</Label>
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="h-9 bg-white w-full">
         <SelectValue placeholder={placeholder || "Todos"} />

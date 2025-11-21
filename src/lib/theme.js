@@ -20,6 +20,7 @@ const themeMap = {
   fontSizeH1: '--font-size-h1',
   fontSizeH2: '--font-size-h2',
   fontSizeH3: '--font-size-h3',
+  //headerLogoSize: '--header-logo-size', // Para controlar logo via CSS no futuro
 };
 
 /**

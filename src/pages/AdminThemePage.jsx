@@ -247,8 +247,8 @@ function AdminThemePage() {
 
               {/* Cores do Header */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <ColorInput label="Cor de Fundo" name="headerBg" />
-                <ColorInput label="Cor do Texto/Ícones" name="headerText" />
+                <ColorInput label="Cor de Fundo" name="corNavbarFundo" />
+                <ColorInput label="Cor do Texto/Ícones" name="corNavbarTexto" />
               </div>
 
               <hr />
@@ -335,7 +335,7 @@ function AdminThemePage() {
               {/* 2. Se for IMAGEM: Mostra seletor de Formato (Estilização) */}
               {settings.headerType === 'image' && (
                 <div className="form-group mt-4 pt-4 border-t">
-                  <Label>Estilização da Imagem (Tamanho fixo: 60px)</Label>
+                  <Label>Estilização da Imagem</Label>
                   <select
                     name="headerLogoShape" // Nova configuração: 'headerLogoShape'
                     value={settings.headerLogoShape || 'square'}

@@ -27,8 +27,14 @@ import AtendimentoPage from './pages/AtendimentoPage';
 import PosAtendimentoPage from './pages/PosAtendimentoPage';
 import NotificacaoPage from './pages/NotificacaoPage';
 import MensagensPage from './pages/MensagensPage';
-import ArquivosPage from './pages/ArquivosPage';
+import TransactionsPage from './pages/TransactionsPage';
 import ClientTriagemPage from './pages/client/ClientTriagemPage';
+import UserProfilePage from '@/pages/UserProfilePage';
+import IaPreAtendimentoPage from './pages/IaPreAtendimentoPage';
+import IaAtendimentoPage from './pages/IaAtendimentoPage';
+import IaPosAtendimentoPage from './pages/IaPosAtendimentoPage';
+import RelatorioFinalPage from './pages/RelatorioFinalPage';
+import IaRelatorioPage from './pages/IaRelatorioPage';
 
 function App() {
   //window.auth = auth;  //Função gerar token
@@ -49,12 +55,18 @@ function App() {
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
           <Route path="/equipe" element={<EquipePage />} />
           <Route path="/admin/tema" element={<AdminThemePage />} />
-          <Route path="/triagem" element={<PreAtendimentoPage />} />        
+          <Route path="/triagem" element={<PreAtendimentoPage />} />
+          <Route path="/ia-triagem" element={<IaPreAtendimentoPage />} />
           <Route path="/atendimento" element={<AtendimentoPage />} />
+          <Route path="/ia-atendimento" element={<IaAtendimentoPage />} />
           <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
+          <Route path="/ia-pos-atendimento" element={<IaPosAtendimentoPage />} />
           <Route path="/notificacoes" element={<NotificacaoPage />} />
           <Route path="/mensagens" element={<MensagensPage />} />
-          <Route path="/arquivos" element={<ArquivosPage />} />
+          <Route path="/transacoes" element={<TransactionsPage />} />
+          <Route path="perfil" element={<UserProfilePage />} />
+          <Route path="/relatorios" element={<RelatorioFinalPage />} />
+          <Route path="/ia-relatorio" element={<IaRelatorioPage />} />
         </Route>
       </Route>
       <Route element={<PrivateRoute />}>

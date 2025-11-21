@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, SlidersHorizontal, Mail, Shield, X, Edit } from 'lucide-react';
+import { Search, Mail, Shield, Edit, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 function EquipePage() {
@@ -18,7 +18,6 @@ function EquipePage() {
   const [error, setError] = useState('');
   
   // Estados de controle
-  const [showFilters, setShowFilters] = useState(false);
   const [search, setSearch] = useState('');
   const [userToEdit, setUserToEdit] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -57,78 +56,81 @@ function EquipePage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
       
-      {/* SIDEBAR */}
-      <aside className={`bg-white border-r border-slate-200 p-6 w-full h-auto md:w-80 md:h-screen md:sticky md:top-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="font-bold text-lg flex items-center gap-2"><SlidersHorizontal className="w-5 h-5 text-primary"/> Filtros</h2>
-          <Button variant="ghost" size="icon" onClick={() => setShowFilters(false)} className="md:hidden"><X className="h-4 w-4" /></Button>
+      {/* --- CABEÇALHO + BUSCA (NO TOPO) --- */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Gestão de Equipe</h1>
+          <p className="text-slate-500">Gerencie os advogados do escritório.</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar advogado..." className="pl-8" value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-      </aside>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            {/* Input de Busca */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar advogado..." 
+                className="pl-8 bg-white" 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+              />
+            </div>
 
-      {/* CONTEÚDO */}
-      <main className="flex-1 p-4 md:p-8 w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Gestão de Equipe</h1>
-            <p className="text-slate-500">Gerencie os advogados do escritório.</p>
-          </div>
-          
-          <div className="flex gap-3 w-full sm:w-auto">
-             <Button variant="outline" className="md:hidden flex-1" onClick={() => setShowFilters(!showFilters)}>
-              <SlidersHorizontal className="mr-2 h-4 w-4" /> Filtrar
-            </Button>
-            
+            {/* Botão Novo */}
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
               <DialogTrigger asChild>
-                <Button className="flex-1 sm:flex-none">Novo Advogado</Button>
+                <Button className="w-full sm:w-auto btn-primary">
+                  <Plus className="mr-2 h-4 w-4" /> Novo Advogado
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader><DialogTitle>Cadastrar Advogado</DialogTitle></DialogHeader>
                 <CreateAdvogadoForm onUserCreated={handleUserCreated} />
               </DialogContent>
             </Dialog>
-          </div>
         </div>
+      </div>
 
-        {loading ? <p>Carregando...</p> : error ? <p className="text-red-500">{error}</p> : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredUsers.map(user => (
-              <Card key={user.uid} className="border-t-4 border-t-primary shadow-sm hover:shadow-md">
-                <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
-                    {user.name.charAt(0)}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{user.name}</CardTitle>
-                    <Badge variant="outline" className="mt-1 text-xs">Advogado</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="text-sm space-y-2">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Mail className="h-4 w-4 text-primary" /> {user.email}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Shield className="h-4 w-4 text-primary" /> Acesso Total
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-2 border-t bg-slate-50/50">
-                  <Button variant="ghost" className="w-full hover:bg-white" onClick={() => setUserToEdit(user)}>
-                    <Edit className="mr-2 h-4 w-4" /> Editar Perfil
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
+      {/* --- ÁREA DE CONTEÚDO --- */}
+      {loading ? <p>Carregando...</p> : error ? <p className="text-red-500">{error}</p> : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredUsers.map(user => (
+            <Card key={user.uid} className="border-t-4 border-t-primary shadow-sm hover:shadow-md">
+              <CardHeader className="flex flex-row items-center gap-4 pb-2">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="overflow-hidden">
+                  <CardTitle className="text-lg truncate" title={user.name}>{user.name}</CardTitle>
+                  <Badge variant="outline" className="mt-1 text-xs">Advogado</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Mail className="h-4 w-4 text-primary shrink-0" /> 
+                  <span className="truncate">{user.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Shield className="h-4 w-4 text-primary shrink-0" /> Acesso Total
+                </div>
+              </CardContent>
+              <CardFooter className="pt-2 border-t bg-slate-50/50">
+                <Button variant="ghost" className="w-full hover:bg-white" onClick={() => setUserToEdit(user)}>
+                  <Edit className="mr-2 h-4 w-4" /> Editar Perfil
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+          {filteredUsers.length === 0 && (
+             <div className="col-span-full text-center py-12 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">Nenhum membro encontrado.</p>
+             </div>
+          )}
+        </div>
+      )}
 
-      {/* Modal de Edição (separado para não poluir o grid) */}
+      {/* Modal de Edição */}
       {userToEdit && (
         <Dialog open={!!userToEdit} onOpenChange={() => setUserToEdit(null)}>
           <DialogContent>

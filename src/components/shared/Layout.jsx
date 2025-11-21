@@ -21,11 +21,6 @@ function Layout() {
     fetchTheme();
   }, []);
 
-  const handleLogout = () => {
-    // Sua lógica de logout aqui (ou use o LogoutButton diretamente)
-    // Se for usar o componente LogoutButton, o botão abaixo pode ser removido
-  };
-
   const ColorInput = ({ label, name, defaultValue }) => (
     <div className="space-y-1">
       <Label className="text-xs font-semibold text-slate-500 uppercase">{label}</Label>
@@ -51,8 +46,8 @@ function Layout() {
 
   const getLogoShapeStyle = (shape) => {
     const baseStyle = {
-      height: '60px', // TAMANHO FIXO CONFORME SOLICITADO
-      width: '60px',  // Forçamos a largura também para garantir o formato quadrado/redondo
+      height: '80px', // TAMANHO FIXO CONFORME SOLICITADO
+      width: '80px',  // Forçamos a largura também para garantir o formato quadrado/redondo
       objectFit: 'cover' // 'cover' preenche melhor formatos geométricos que 'contain'
     };
 
@@ -73,8 +68,10 @@ function Layout() {
 
   return (
     <div>
-      <header>
-        {/* Note que troquei 'bg-blue-400' por estilo dinâmico para usar a cor que você escolher no painel */}
+      <header
+        className="relative z-50 w-full border-b shadow-sm transition-all"
+        style={{ backgroundColor: 'var(--header-bg)', color: 'var(--header-text)' }}
+      >
         <nav
           className='flex flex-col gap-3 p-4 transition-colors duration-300'
           style={{
@@ -111,7 +108,7 @@ function Layout() {
             <div className="flex gap-4 font-medium">
               <Link to="/dashboard" className="hover:opacity-80">Dashboard</Link>
               <Link to="/processos" className="hover:opacity-80">Processos</Link>
-              <Link to="/clientes" className="hover:opacity-80">Clientes</Link>
+              <Link to="/clientes" className="hover:opacity-80">Clientes</Link>              
               <Link to="/agenda" className="hover:opacity-80">Agenda</Link>
             </div>
           </div>
@@ -120,11 +117,26 @@ function Layout() {
           <div className="flex justify-between items-center border-t border-white/20 pt-2 mt-1">
             <div className="flex items-center gap-8 ml-4">
               <Link to="/equipe" className="text-sm opacity-80 hover:opacity-100">Equipe</Link>
+              <Link to="/relatorios" className="...">Relatórios</Link>
               <Link to="/admin/tema" className="text-sm opacity-80 hover:opacity-100">Aparência do site</Link>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="break-words text-sm">{currentUser?.email}</span>
-              {/* Usando o componente LogoutButton que você já tem importado é mais limpo */}
+            <div className="flex items-center gap-3">
+              <Link
+                to="/perfil"
+                className="group flex items-center gap-2 p-1 rounded-full hover:bg-white/10 transition-all"
+                title="Editar Perfil"
+              >
+                <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-white/30 transition-all">
+                  {currentUser?.photoUrl ? (
+                    <img src={currentUser.photoUrl} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-slate-500">
+                      <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </Link>
+
               <LogoutButton />
             </div>
           </div>

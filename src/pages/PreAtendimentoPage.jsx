@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
-import { CheckCircle2, AlertCircle, Plus, FileText, Check, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles } from 'lucide-react';
 
 // Componentes Shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,8 @@ function PreAtendimentoPage() {
     try {
       const response = await apiClient.get('/preatendimento');
       setLeads(response.data);
+      const activeLeads = response.data.filter(l => l.status !== 'Convertido');
+      setLeads(activeLeads);
     } catch (error) {
       console.error("Erro ao buscar leads:", error);
     } finally {
@@ -71,17 +73,13 @@ function PreAtendimentoPage() {
       setLeads(prev => prev.map(l => l.id === id ? { ...l, status: 'Em Análise' } : l));
     } catch (error) { alert("Erro ao aceitar."); }
   };
-
+  //Função handleTransformar sem pagamento que funciona
   const handleTransformar = async (lead) => {
     if (!window.confirm(`Deseja transformar o caso de ${lead.nome} em um Processo?`)) return;
-
     try {
       const response = await apiClient.post(`/preatendimento/${lead.id}/converter`, { data: lead });
-
-      // Captura a senha da resposta
       const senha = response.data.tempPassword;
 
-      // Exibe no alert
       alert(`SUCESSO!\n\nCliente e Processo criados.\n\nSENHA PROVISÓRIA DO CLIENTE: ${senha}\n\nAnote esta senha e envie para o cliente.`);
 
       fetchLeads();
@@ -91,6 +89,29 @@ function PreAtendimentoPage() {
     }
   };
 
+  //Função handleTransformar com pagamento à implementar
+  /*
+    const handleTransformar = async (lead) => {
+      if (!window.confirm(`Criar Cliente e Processo para ${lead.nome}?`)) return;
+      try {
+        // ... chamada da API existente ...
+  
+        // --- FUTURA IMPLEMENTAÇÃO FINANCEIRA ---
+        // Se houver um 'lead.proposalValue' (valor acordado), aqui chamaremos a API:
+        // await apiClient.post('/financial/create-charge', { 
+        //    clientId: res.clientId, 
+        //    amount: lead.proposalValue,
+        //    description: `Honorários Iniciais - ${lead.categoria}`
+        // });
+        // Isso irá gerar o item na TransactionsPage.
+        // ---------------------------------------
+  
+        alert("Sucesso! Cliente e Processo criados.");
+        fetchLeads();
+      } catch (error) { alert("Erro ao converter."); }
+    };
+  
+    */
   // --- 3. LÓGICA DO FORMULÁRIO ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -235,7 +256,7 @@ function PreAtendimentoPage() {
 
   // TELA DE SUCESSO
   if (successForm) {
-    return (//                                                se quiser adcionar duração do alert na tela: duration-500
+    return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-in fade-in zoom-in">
         <div className="bg-green-100 p-4 rounded-full mb-6">
           <CheckCircle2 className="w-16 h-16 text-green-600" />
@@ -512,13 +533,22 @@ function PreAtendimentoPage() {
 
             {/* Bloco Informativo Admin */}
             <div className="border-2 border-dashed border-blue-300 bg-blue-50 p-6 rounded-lg">
-              <div className="flex items-center gap-2 mb-2 text-blue-800">
-                <AlertCircle className="w-5 h-5" />
-                <h3 className="font-bold text-lg">Área Administrativa</h3>
+              <div>
+                <div className="flex items-center gap-2 mb-2 text-blue-900">
+                  <Bot className="w-6 h-6" /> {/* Importe o ícone Bot de lucide-react */}
+                  <h3 className="font-bold text-lg">Inteligência Artificial do Escritório</h3>
+                </div>
+                <p className="text-sm text-blue-700 max-w-xl">
+                  Utilize nossa IA para analisar os pré-atendimentos pendentes. Ela fornecerá um resumo estruturado, sugestão de documentos e uma triagem preliminar para agilizar seu trabalho.
+                </p>
               </div>
-              <p className="text-sm text-blue-700">
-                Abaixo estão as solicitações recebidas pelo site.
-              </p>
+
+              <Button
+                onClick={() => window.location.href = '/ia-triagem'} // Ou use navigate se tiver o hook
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-md whitespace-nowrap"
+              >
+                <Sparkles className="mr-2 h-4 w-4" /> Acessar Assistente IA
+              </Button>
             </div>
 
             {/* LISTA DE DADOS RECEBIDOS (O que estava faltando) */}
