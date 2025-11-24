@@ -59,7 +59,7 @@ function CreateCaseForm({ onCaseCreated }) {
 
     try {
       // Monta o objeto completo com todos os filtros
-      const caseData = { 
+      const processoData = { 
         titulo,
         numeroProcesso,
         clientId: selectedClient,
@@ -83,7 +83,7 @@ function CreateCaseForm({ onCaseCreated }) {
         responsavel
       };
       
-      const response = await apiClient.post('/processo', caseData);
+      const response = await apiClient.post('/processo', processoData);
       
       alert('Processo criado com sucesso!');
       if(onCaseCreated) {

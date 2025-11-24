@@ -1,59 +1,59 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "@/services/apiClient";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card"; // Removi Header/Title pois já tem na página
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from 'lucide-react';
 
 function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
   
-  // Estado inicial com TODOS os campos do banco
+  // 1. Estado Inicial (Igual ao de Criação + Segurança contra null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
+    password: "", // Senha sempre vazia ao iniciar
     cpfCnpj: "",
     oab: "",
     phone: "",
     dataNascimento: "",
     estadoCivil: "",
+    // Objeto endereço inicializado para evitar erro de 'undefined'
     endereco: {
-      cep: "",
-      rua: "",
-      numero: "",
-      complemento: "",
-      bairro: "",
-      cidade: "",
-      estado: ""
+      cep: "", rua: "", numero: "", complemento: "", 
+      bairro: "", cidade: "", estado: ""
     }
   });
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // 📌 Preenche o formulário com os dados do usuário recebido
+  // 2. useEffect para POPULAR os dados existentes
   useEffect(() => {
     if (user) {
       setFormData({
         name: user.name || "",
         email: user.email || "",
-        password: "", // Senha sempre vazia
+        password: "", // Nunca preenchemos a senha vinda do banco
         cpfCnpj: user.cpfCnpj || "",
         oab: user.oab || "",
-        phone: user.phone || "", // Note que no banco salvamos como 'phone'
+        phone: user.phone || "",
         dataNascimento: user.dataNascimento || "",
         estadoCivil: user.estadoCivil || "",
-        // Garante que endereço seja um objeto, mesmo que vazio
-        endereco: user.endereco || { cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "" }
+        // Garante que endereço existe, se não, usa vazio
+        endereco: user.endereco || { 
+          cep: "", rua: "", numero: "", complemento: "", 
+          bairro: "", cidade: "", estado: "" 
+        }
       });
     }
   }, [user]);
 
-  // Atualiza inputs (Lida com campos normais e aninhados de endereço)
+  // 3. Handlers (Idênticos ao CreateForm)
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
     if (name.startsWith('endereco.')) {
       const field = name.split('.')[1];
       setFormData(prev => ({
@@ -65,12 +65,10 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
     }
   };
 
-  // Handler para Selects do Shadcn
   const handleSelectChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Busca CEP (Opcional na edição, mas útil)
   const handleCepBlur = async (e) => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length === 8) {
@@ -94,14 +92,13 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
     }
   };
 
-  // 📌 Salva alterações
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError("");
 
     try {
-      // Prepara o payload removendo senha se estiver vazia
+      // Remove senha vazia do envio
       const payload = { ...formData };
       if (!payload.password || payload.password.trim() === "") {
         delete payload.password;
@@ -110,8 +107,8 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
       }
 
       await apiClient.put(`/users/advogado/${user.uid}`, payload);
-
-      alert("Perfil atualizado com sucesso!");
+      
+      alert("Dados atualizados com sucesso!");
       if (onEditComplete) onEditComplete(); 
 
     } catch (err) {
@@ -128,7 +125,7 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
       <CardContent className="p-0">
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* DADOS PESSOAIS */}
+          {/* SEÇÃO 1: DADOS PESSOAIS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
@@ -171,13 +168,14 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
 
           <hr className="border-gray-100 my-2" />
 
-          {/* ENDEREÇO */}
+          {/* SEÇÃO 2: ENDEREÇO */}
           <div className="space-y-3">
             <Label className="text-base font-semibold text-slate-700">Endereço</Label>
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
+              <div className="space-y-1 relative">
                 <Label className="text-xs">CEP</Label>
                 <Input name="endereco.cep" value={formData.endereco.cep} onChange={handleChange} onBlur={handleCepBlur} />
+                <Search className="w-3 h-3 absolute right-2 top-8 text-slate-400" />
               </div>
               <div className="col-span-2 space-y-1">
                 <Label className="text-xs">Rua</Label>
@@ -208,7 +206,7 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
 
           <hr className="border-gray-100 my-2" />
 
-          {/* SEGURANÇA */}
+          {/* SEÇÃO 3: SEGURANÇA */}
           <div className="space-y-2">
             <Label htmlFor="password">Nova Senha (opcional)</Label>
             <Input

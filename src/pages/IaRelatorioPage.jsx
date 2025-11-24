@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function IaRelatorioPage() {
   const [cases, setCases] = useState([]);
-  const [selectedCaseId, setSelectedCaseId] = useState('');
+  const [selectedprocessoId, setSelectedprocessoId] = useState('');
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState(null);
@@ -76,7 +76,7 @@ function IaRelatorioPage() {
         <CardContent className="pt-6 flex flex-col md:flex-row gap-4 items-end">
           <div className="w-full md:w-1/2 space-y-2">
             <label className="text-sm font-medium text-slate-700">Selecione o Processo Encerrado:</label>
-            <Select value={selectedCaseId} onValueChange={setSelectedCaseId}>
+            <Select value={selectedprocessoId} onValueChange={setSelectedprocessoId}>
               <SelectTrigger className="h-11 bg-white">
                 <SelectValue placeholder="Busque pelo processo..." />
               </SelectTrigger>
@@ -90,7 +90,7 @@ function IaRelatorioPage() {
         </CardContent>
       </Card>
 
-      {selectedCaseId && (
+      {selectedprocessoId && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-slate-100 rounded-xl mb-6">
             <TabsTrigger value="relatorio" className="py-3 gap-2"><FileText className="w-4 h-4"/> Relatório Final</TabsTrigger>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
 import { format } from 'date-fns';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ptBR from 'date-fns/locale/pt-BR';
 
 // Imports dos componentes Shadcn/ui e Ícones
@@ -20,7 +21,7 @@ function AgendaPage() {
   const [processos, setProcessos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // --- Estados de Controle (Modal) ---
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -39,17 +40,16 @@ function AgendaPage() {
         apiClient.get('/processo')
       ]);
 
-      // Filtra para garantir que apenas compromissos com data válida sejam processados
       const compromissosValidos = compromissosRes.data.filter(
         c => c.dataHora && typeof c.dataHora === 'string'
       );
-      
-      // Ordena os compromissos pela data
-      const sortedCompromissos = compromissosValidos.sort((a, b) => 
+
+      const sortedCompromissos = compromissosValidos.sort((a, b) =>
         new Date(a.dataHora) - new Date(b.dataHora)
       );
 
       setCompromissos(sortedCompromissos);
+      setFilteredCompromissos(sortedCompromissos);
       setProcessos(processosRes.data);
     } catch (err) {
       console.error("Erro ao buscar dados:", err);
@@ -59,16 +59,41 @@ function AgendaPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const location = useLocation();
 
-  // --- Lógica de Filtragem (NOVO) ---
+  useEffect(() => {
+    // Se o usuário navegou da página de Atendimento
+    if (location.state?.processoId) {
+      setSelectedEvent({
+        titulo: `Audiência - ${location.state.processoId.slice(0, 5)}`,
+        tipo: location.state.tipo,
+        processoId: location.state.processoId,
+        dataHora: format(new Date(), "yyyy-MM-dd'T'10:00"), // Data atual + 10h
+      });
+      setIsDialogOpen(true); // Abre o modal
+      // Limpa o estado após o uso para não abrir o modal em futuros acessos diretos
+      location.state = {};
+    }
+  }, [location.state, location.state?.processoId]);
+
+  /*
   const filteredCompromissos = compromissos.filter((item) => {
     const matchesSearch = item.titulo.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'todos' || item.resource?.tipo === filterType;
     return matchesSearch && matchesType;
-  });
+  });*/
+
+  // --- LÓGICA DE FILTRAGEM (NOVO useEffect) ---
+  const [filteredCompromissos, setFilteredCompromissos] = useState([]);
+
+  useEffect(() => {
+    const result = compromissos.filter((item) => {
+      const matchesSearch = item.title?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = filterType === 'todos' || item.resource?.tipo === filterType;
+      return matchesSearch && matchesType;
+    });
+    setFilteredCompromissos(result);
+  }, [compromissos, searchTerm, filterType]);
 
   // --- Funções Handler ---
 
@@ -82,7 +107,7 @@ function AgendaPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   const handleEditClick = (compromisso) => {
     setSelectedEvent({
       ...compromisso,
@@ -90,7 +115,7 @@ function AgendaPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   const handleModalSubmit = async (e) => {
     e.preventDefault();
     const { id, titulo, dataHora, tipo, processoId } = selectedEvent;
@@ -132,7 +157,7 @@ function AgendaPage() {
 
       {loading ? <p>Carregando...</p> : error ? <p className="text-destructive">{error}</p> : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
+
           {/* COLUNA ESQUERDA: LISTA COM FILTROS */}
           <div className="lg:col-span-2">
             <Card>
@@ -141,14 +166,14 @@ function AgendaPage() {
                 <CardDescription>Gerencie sua pauta do dia a dia.</CardDescription>
               </CardHeader>
               <CardContent>
-                
+
                 {/* --- BARRA DE FILTROS (NOVO) --- */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6">
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Buscar por título..." 
-                      className="pl-8" 
+                    <Input
+                      placeholder="Buscar por título..."
+                      className="pl-8"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -169,7 +194,7 @@ function AgendaPage() {
                   </div>
                   {/* Botão para limpar filtros se houver busca */}
                   {(searchTerm || filterType !== 'todos') && (
-                    <Button variant="ghost" size="icon" onClick={() => {setSearchTerm(''); setFilterType('todos')}}>
+                    <Button variant="ghost" size="icon" onClick={() => { setSearchTerm(''); setFilterType('todos') }}>
                       <X className="h-4 w-4" />
                     </Button>
                   )}
@@ -189,15 +214,15 @@ function AgendaPage() {
                     {filteredCompromissos.length > 0 ? (
                       filteredCompromissos.map(item => (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.titulo}</TableCell>
+                          <TableCell className="font-medium">{item.title}</TableCell>
                           <TableCell>
                             {format(new Date(item.dataHora), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                           </TableCell>
                           <TableCell>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                              ${item.resource?.tipo === 'Prazo' ? 'bg-red-100 text-red-800' : 
-                                item.resource?.tipo === 'Audiência' ? 'bg-purple-100 text-purple-800' : 
-                                'bg-blue-100 text-blue-800'}`}>
+                              ${item.resource?.tipo === 'Prazo' ? 'bg-red-100 text-red-800' :
+                                item.resource?.tipo === 'Audiência' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-blue-100 text-blue-800'}`}>
                               {item.resource?.tipo || 'Outro'}
                             </span>
                           </TableCell>
@@ -275,7 +300,6 @@ function AgendaPage() {
                 <Select name="processoId" value={selectedEvent?.processoId || ''} onValueChange={(value) => handleSelectChange('processoId', value)}>
                   <SelectTrigger className="col-span-3"><SelectValue placeholder="Nenhum" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">-- Nenhum Processo --</SelectItem>
                     {processos.map(p => <SelectItem key={p.id} value={p.id}>{p.titulo || p.numeroProcesso}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -283,6 +307,11 @@ function AgendaPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              {selectedEvent?.id && (
+                <Button type="button" variant="destructive" onClick={() => handleDelete(selectedEvent.id)}>
+                  Excluir
+                </Button>
+              )}
               <Button type="submit">Salvar</Button>
             </DialogFooter>
           </form>

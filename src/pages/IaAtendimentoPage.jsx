@@ -11,8 +11,8 @@ import { Badge } from "@/components/ui/badge";
 
 function IaAtendimentoPage() {
   const [cases, setCases] = useState([]);
-  const [selectedCaseId, setSelectedCaseId] = useState('');
-  const [selectedCaseData, setSelectedCaseData] = useState(null);
+  const [selectedprocessoId, setSelectedprocessoId] = useState('');
+  const [selectedprocessoData, setSelectedprocessoData] = useState(null);
   
   // Estados da IA
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -31,9 +31,9 @@ function IaAtendimentoPage() {
   }, []);
 
   const handleSelectCase = (value) => {
-    setSelectedCaseId(value);
+    setSelectedprocessoId(value);
     const item = cases.find(c => c.id === value);
-    setSelectedCaseData(item);
+    setSelectedprocessoData(item);
     setAnalysisResult(null);
   };
 
@@ -116,7 +116,7 @@ function IaAtendimentoPage() {
         <CardContent className="flex flex-col md:flex-row gap-4 items-end">
           <div className="w-full md:w-1/2 space-y-2">
             <label className="text-sm font-medium text-slate-700">Processo Ativo:</label>
-            <Select value={selectedCaseId} onValueChange={handleSelectCase}>
+            <Select value={selectedprocessoId} onValueChange={handleSelectCase}>
               <SelectTrigger className="h-11">
                 <SelectValue placeholder="Busque pelo título ou número..." />
               </SelectTrigger>
@@ -132,7 +132,7 @@ function IaAtendimentoPage() {
           
           <Button 
             onClick={handleAnalyze} 
-            disabled={!selectedCaseId || isAnalyzing}
+            disabled={!selectedprocessoId || isAnalyzing}
             className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto min-w-[200px] h-11 text-base"
           >
             {isAnalyzing ? (

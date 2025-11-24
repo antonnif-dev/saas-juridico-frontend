@@ -35,6 +35,7 @@ import IaAtendimentoPage from './pages/IaAtendimentoPage';
 import IaPosAtendimentoPage from './pages/IaPosAtendimentoPage';
 import RelatorioFinalPage from './pages/RelatorioFinalPage';
 import IaRelatorioPage from './pages/IaRelatorioPage';
+import EditAdvogadoPage from './pages/EditAdvogadoPage';
 
 function App() {
   //window.auth = auth;  //Função gerar token
@@ -54,6 +55,7 @@ function App() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/agenda/:id" element={<AgendaDetailPage />} />
           <Route path="/equipe" element={<EquipePage />} />
+          <Route path="/equipe/:id" element={<EditAdvogadoPage />} />
           <Route path="/admin/tema" element={<AdminThemePage />} />
           <Route path="/triagem" element={<PreAtendimentoPage />} />
           <Route path="/ia-triagem" element={<IaPreAtendimentoPage />} />

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
-import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles, ArrowLeft } from 'lucide-react';
 
 // Componentes Shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -9,16 +10,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function PreAtendimentoPage() {
   const { userRole } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
 
   // Estados do Formulário
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingForm, setLoadingForm] = useState(false);
   const [successForm, setSuccessForm] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(false); //#verificar necessidade
   const [errorForm, setErrorForm] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -28,7 +31,7 @@ function PreAtendimentoPage() {
 
   // --- FORMULÁRIO: ESTADO INICIAL ---
   const initialFormState = {
-    nome: '', cpfCnpj: '', dataNascimento: '', email: '', telefone: '',
+    nome: '', tipoPessoa: 'Física', cpfCnpj: '', dataNascimento: '', email: '', telefone: '',
     endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' },
     estadoCivil: '', profissao: '', nomeMae: '',
     categoria: '', resumoProblema: '', dataProblema: '', problemaContinuo: false,
@@ -37,6 +40,50 @@ function PreAtendimentoPage() {
     consentimentoLGPD: false, consentimientoWhatsapp: false, consentimientoCadastro: false
   };
   const [formData, setFormData] = useState(initialFormState);
+  const handleCepBlur = async (e) => {
+    const cep = e.target.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setFormData(prev => ({
+            ...prev,
+            endereco: {
+              ...prev.endereco,
+              rua: data.logradouro,
+              bairro: data.bairro,
+              cidade: data.localidade,
+              estado: data.uf,
+              cep: cep
+            }
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP");
+      }
+    }
+  };
+  // --- LÓGICA CPF/CNPJ AUTOMÁTICA ---
+  const handleCpfCnpjChange = (e) => {
+    const value = e.target.value;
+    // Remove não numéricos para contar
+    const numericValue = value.replace(/\D/g, '');
+
+    let tipo = formData.tipoPessoa;
+    // Lógica simples: Passou de 11 dígitos, assume CNPJ (Pessoa Jurídica)
+    if (numericValue.length > 11) {
+      tipo = 'Jurídica';
+    } else {
+      tipo = 'Física';
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      cpfCnpj: value,
+      tipoPessoa: tipo
+    }));
+  };
 
   // --- 1. BUSCAR DADOS (Apenas se for Admin/Advogado) ---
   const fetchLeads = async () => {
@@ -144,6 +191,7 @@ function PreAtendimentoPage() {
     try {
       await apiClient.post('/preatendimento', formData);
       setSuccessForm(true);
+      //if (isAdmin) fetchLeads(); // Deixar comentado: window.scrollTo(0, 0); fetchLeads();
       window.scrollTo(0, 0);
       fetchLeads();
     } catch (err) {
@@ -272,6 +320,7 @@ function PreAtendimentoPage() {
     );
   }
 
+  // Até formcontent
   const FormContent = () => (
     <>
       {successForm ? (
@@ -301,13 +350,21 @@ function PreAtendimentoPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Nome Completo *</label>
+                <label className="block text-sm font-medium mb-1">Nome Completo / Razão Social *</label>
                 <input name="nome" required className="input-base" value={formData.nome} onChange={handleChange} />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">CPF ou CNPJ *</label>
-                <input name="cpfCnpj" required className="input-base" placeholder="000.000.000-00" value={formData.cpfCnpj} onChange={handleChange} />
+                <input name="cpfCnpj" required className="input-base" placeholder="Digite apenas números" value={formData.cpfCnpj} onChange={handleCpfCnpjChange} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Tipo de Pessoa</label>
+                <select name="tipoPessoa" className="select-base" value={formData.tipoPessoa} onChange={handleChange}>
+                  <option value="Física">Pessoa Física</option>
+                  <option value="Jurídica">Pessoa Jurídica</option>
+                </select>
               </div>
 
               <div>
@@ -316,35 +373,57 @@ function PreAtendimentoPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">E-mail *</label>
-                <input name="email" type="email" required className="input-base" value={formData.email} onChange={handleChange} />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Telefone / WhatsApp *</label>
-                <input name="telefone" type="tel" required className="input-base" placeholder="(00) 00000-0000" value={formData.telefone} onChange={handleChange} />
+                <label className="block text-sm font-medium mb-1">Estado Civil</label>
+                <select name="estadoCivil" className="select-base" value={formData.estadoCivil} onChange={handleChange}>
+                  <option value="">Selecione...</option>
+                  <option value="Solteiro(a)">Solteiro(a)</option>
+                  <option value="Casado(a)">Casado(a)</option>
+                  <option value="Divorciado(a)">Divorciado(a)</option>
+                  <option value="Viúvo(a)">Viúvo(a)</option>
+                  <option value="União Estável">União Estável</option>
+                  <option value="Não se aplica">Não se aplica (PJ)</option>
+                </select>
               </div>
             </div>
 
-            {/* Endereço */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">E-mail *</label>
+                <input name="email" type="email" required className="input-base" value={formData.email} onChange={handleChange} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Telefone / WhatsApp *</label>
+                <input name="telefone" type="tel" required className="input-base" value={formData.telefone} onChange={handleChange} />
+              </div>
+            </div>
+
             <div className="bg-slate-50 p-4 rounded-md space-y-3 border border-slate-200">
               <p className="font-medium text-sm text-slate-700">Endereço Completo</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input name="endereco.cep" placeholder="CEP" className="input-base" value={formData.endereco.cep} onChange={handleChange} />
+                <div>
+                  <label className="label-base">CEP (Preenche automático)</label>
+                  <input
+                    name="endereco.cep"
+                    placeholder="00000-000"
+                    className="input-base"
+                    value={formData.endereco.cep}
+                    onChange={handleChange}
+                    onBlur={handleCepBlur}
+                  />
+                </div>
                 <div className="md:col-span-2">
-                  <input name="endereco.rua" placeholder="Rua / Av." className="input-base" value={formData.endereco.rua} onChange={handleChange} />
+                  <label className="label-base">Rua / Av.</label>
+                  <input name="endereco.rua" className="input-base" value={formData.endereco.rua} onChange={handleChange} />
                 </div>
                 <input name="endereco.numero" placeholder="Número" className="input-base" value={formData.endereco.numero} onChange={handleChange} />
                 <input name="endereco.complemento" placeholder="Complemento" className="input-base" value={formData.endereco.complemento} onChange={handleChange} />
                 <input name="endereco.bairro" placeholder="Bairro" className="input-base" value={formData.endereco.bairro} onChange={handleChange} />
                 <input name="endereco.cidade" placeholder="Cidade" className="input-base" value={formData.endereco.cidade} onChange={handleChange} />
-                <input name="endereco.estado" placeholder="Estado (UF)" className="input-base" value={formData.endereco.estado} onChange={handleChange} />
+                <input name="endereco.estado" placeholder="UF" className="input-base" value={formData.endereco.estado} onChange={handleChange} />
               </div>
             </div>
 
-            {/* Complementares */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input name="estadoCivil" placeholder="Estado Civil" className="input-base" value={formData.estadoCivil} onChange={handleChange} />
               <input name="profissao" placeholder="Profissão" className="input-base" value={formData.profissao} onChange={handleChange} />
               <input name="nomeMae" placeholder="Nome da Mãe" className="input-base" value={formData.nomeMae} onChange={handleChange} />
             </div>
@@ -380,7 +459,7 @@ function PreAtendimentoPage() {
               <label className="block text-sm font-medium mb-1">Resumo do Problema</label>
               <textarea
                 name="resumoProblema"
-                className="textarea-base min-h-[120px]"
+                className="textarea-base min-h-[120px] min-w-full"
                 placeholder="Descreva o que está acontecendo com o máximo de detalhes..."
                 value={formData.resumoProblema}
                 onChange={handleChange}
@@ -459,7 +538,7 @@ function PreAtendimentoPage() {
             <h2 className="text-xl font-semibold border-b pb-2 text-primary">4. Informações Adicionais</h2>
             <textarea
               name="informacaoExtra"
-              className="textarea-base"
+              className="textarea-base min-w-full"
               placeholder="Deseja acrescentar mais alguma informação importante?"
               value={formData.informacaoExtra}
               onChange={handleChange}
@@ -467,32 +546,34 @@ function PreAtendimentoPage() {
           </section>
 
           {/* 5. CONSENTIMENTOS */}
+
           <section className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4">
             <h3 className="font-bold text-blue-900">Termos e Consentimentos</h3>
 
             <label className="flex items-start gap-3 cursor-pointer select-none">
-              <input name="consentimentoLGPD" type="checkbox" required className="mt-1 w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary" checked={formData.consentimentoLGPD} onChange={handleChange} />
-              <span className="text-sm text-slate-700">
-                <strong>(Obrigatório)</strong> Autorizo o tratamento dos meus dados pessoais para fins de pré-atendimento jurídico, análise de caso e contato, em conformidade com a Lei Geral de Proteção de Dados (LGPD).
-              </span>
+              <input name="consentimentoLGPD" type="checkbox" required className="mt-1 w-5 h-5 text-primary rounded" checked={formData.consentimentoLGPD} onChange={handleChange} />
+              <span className="text-sm text-slate-700"><strong>(Obrigatório)</strong> Autorizo o tratamento dos meus dados pessoais para fins de pré-atendimento jurídico, análise de caso e contato, em conformidade com a Lei Geral de Proteção de Dados (LGPD).</span>
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer select-none">
-              <input name="consentimentoWhatsapp" type="checkbox" required className="mt-1 w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary" checked={formData.consentimentoWhatsapp} onChange={handleChange} />
-              <span className="text-sm text-slate-700">
-                <strong>(Obrigatório)</strong> Concordo em receber mensagens, atualizações sobre meu caso e contatos da equipe jurídica através do WhatsApp informado.
-              </span>
+              <input name="consentimentoWhatsapp" type="checkbox" required className="mt-1 w-5 h-5 text-primary rounded" checked={formData.consentimentoWhatsapp} onChange={handleChange} />
+              <span className="text-sm text-slate-700"><strong>(Obrigatório)</strong> Concordo em receber mensagens, atualizações sobre meu caso e contatos da equipe jurídica através do WhatsApp informado.</span>
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer select-none">
-              <input name="consentimentoCadastro" type="checkbox" className="mt-1 w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary" checked={formData.consentimentoCadastro} onChange={handleChange} />
+              <input
+                name="consentimentoCadastro"
+                type="checkbox"
+                required // AGORA É OBRIGATÓRIO
+                className="mt-1 w-5 h-5 text-primary rounded"
+                checked={formData.consentimentoCadastro}
+                onChange={handleChange}
+              />
               <span className="text-sm text-slate-700">
-                (Opcional) Concordo que meus dados sejam armazenados para a criação de um pré-cadastro, facilitando a continuidade do atendimento caso o serviço seja contratado.
+                <strong>(Obrigatório)</strong> Concordo que meus dados sejam armazenados para a criação de um pré-cadastro, facilitando a continuidade do atendimento caso o serviço seja contratado.
               </span>
             </label>
           </section>
-
-          {renderCamposEspecificos()}
 
           <div className="flex gap-4 pt-4 border-t">
             {/* No modo público, não precisamos do botão cancelar, mas no modal sim. 
@@ -504,8 +585,10 @@ function PreAtendimentoPage() {
             </Button>
           </div>
           {errorForm && <p className="text-red-500 text-sm text-center">{errorForm}</p>}
+          {renderCamposEspecificos()}
         </form>
-      )}
+      )
+      }
     </>
   );
 
@@ -708,10 +791,15 @@ function PreAtendimentoPage() {
         /* --- CENÁRIO 2: PÚBLICO (VÊ O FORMULÁRIO DIRETO NA TELA) --- */
         <Card className="border-slate-200 shadow-md">
           <CardHeader>
+            <Button className="btn-primary" type="button" variant="secondary" onClick={() => navigate('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar ao Início
+            </Button>
+          </CardHeader>
+          <CardContent className="text-center text-2xl">
             <CardTitle>Novo Pré-Atendimento</CardTitle>
             <CardDescription>Preencha os dados abaixo para iniciar.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
+          </CardContent>
+          <CardContent className="pt-2">
             {FormContent()}
           </CardContent>
         </Card>
