@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import ReportModalContent from '@/components/reports/ReportModalContent';
+
 
 function RelatorioFinalPage() {
   const { userRole } = useAuth();
@@ -19,6 +21,11 @@ function RelatorioFinalPage() {
   // Estado para Avaliação (NPS)
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [selectedCaseForRating, setSelectedCaseForRating] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [currentReportProcess, setCurrentReportProcess] = useState(null);
+  const [clientData, setClientData] = useState(null);
+  const [filteredCases, setFilteredCases] = useState([]);
+  //const [decisionResult, setDecisionResult] = useState('');
 
   useEffect(() => {
     const fetchCases = async () => {
@@ -30,6 +37,7 @@ function RelatorioFinalPage() {
           ['Encerrado', 'Arquivado', 'Concluído'].includes(c.status)
         );
         setCases(closedCases);
+        setFilteredCases(closedCases);
       } catch (error) { console.error(error); }
       finally { setLoading(false); }
     };
@@ -40,6 +48,19 @@ function RelatorioFinalPage() {
     e.preventDefault();
     alert("Obrigado pela sua avaliação!");
     setIsRatingOpen(false);
+  };
+
+  const handleViewReport = async (processo) => {
+    try {
+      const clientRes = await apiClient.get(`/clients/${processo.clientId}`);
+      setClientData(clientRes.data);
+    } catch (e) {
+      console.warn("Cliente não encontrado, usando dados limitados.");
+      setClientData({});
+    }
+
+    setCurrentReportProcess(processo);
+    setIsReportModalOpen(true);
   };
 
   return (
@@ -71,53 +92,63 @@ function RelatorioFinalPage() {
       {/* --- LISTA DE CASOS ENCERRADOS --- */}
       {loading ? <p>Carregando histórico...</p> : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {cases.map(processo => (
-            <Card key={processo.id} className="border-l-4 border-l-slate-400 opacity-90 hover:opacity-100 transition-opacity shadow-sm">
-              <CardHeader className="flex flex-row justify-between items-start pb-2">
-                <div>
-                  <CardTitle className="text-lg">{processo.titulo}</CardTitle>
-                  <p className="text-sm text-muted-foreground font-mono mt-1">{processo.numeroProcesso || 'N/A'}</p>
-                </div>
-                <Badge variant="secondary" className="bg-slate-200 text-slate-700">
-                  {processo.status}
-                </Badge>
-              </CardHeader>
+          {filteredCases.length > 0 ? (
+            filteredCases.map(processo => (
+              <Card key={processo.id} className="border-l-4 border-l-slate-400 opacity-90 hover:opacity-100 transition-opacity shadow-sm">
+                <CardHeader className="flex flex-row justify-between items-start pb-2">
+                  <div>
+                    <CardTitle className="text-lg">{processo.titulo}</CardTitle>
+                    <p className="text-sm text-muted-foreground font-mono mt-1">{processo.numeroProcesso || 'N/A'}</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-slate-200 text-slate-700">
+                    {processo.status}
+                  </Badge>
+                </CardHeader>
 
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center gap-2 text-slate-600">
-                  <Archive className="w-4 h-4" />
-                  <span>Arquivado em: {new Date().toLocaleDateString()}</span> {/* Simulado, ideal ter dataFim no banco */}
-                </div>
-                <p className="text-slate-500 italic">"{processo.descricao}"</p>
-              </CardContent>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Archive className="w-4 h-4" />
+                    <span>Arquivado em: {new Date().toLocaleDateString()}</span> {/* Simulado, ideal ter dataFim no banco */}
+                  </div>
+                  <p className="text-slate-500 italic">"{processo.descricao}"</p>
+                </CardContent>
 
-              <CardFooter className="pt-4 border-t bg-slate-50/50 flex justify-end gap-2">
-                {/* Ações para ADMIN */}
-                {isAdmin && (
-                  <Button variant="outline" size="sm">
-                    <FileText className="mr-2 h-3 w-3" /> Ver Relatório
-                  </Button>
-                )}
-
-                {/* Ações para CLIENTE */}
-                {!isAdmin && (
-                  <>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-3 w-3" /> Baixar PDF Final
-                    </Button>
+                <CardFooter className="pt-4 border-t bg-slate-50/50 flex justify-end gap-2">
+                  {/* Ações para ADMIN */}
+                  {isAdmin && (
                     <Button
                       size="sm"
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                      onClick={() => { setSelectedCaseForRating(processo); setIsRatingOpen(true); }}
+                      variant="secondary"
+                      className="w-full text-blue-800"
+                      onClick={() => handleViewReport(processo)}
                     >
-                      <Star className="mr-2 h-3 w-3" /> Avaliar
+                      <FileText className="mr-2 h-3 w-3" /> Ver Relatório Final
                     </Button>
-                  </>
-                )}
-              </CardFooter>
-            </Card>
-          ))}
-          {cases.length === 0 && <p className="col-span-full text-center py-10 text-slate-400 border-2 border-dashed rounded-lg">Nenhum processo encerrado encontrado.</p>}
+                  )}
+
+                  {/* Ações para CLIENTE */}
+                  {!isAdmin && (
+                    <>
+                      <Button variant="outline" size="sm">
+                        <Download className="mr-2 h-3 w-3" /> Baixar PDF Final
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                        onClick={() => { setSelectedCaseForRating(processo); setIsRatingOpen(true); }}
+                      >
+                        <Star className="mr-2 h-3 w-3" /> Avaliar
+                      </Button>
+                    </>
+                  )}
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+            <p className="col-span-full text-center py-10 text-slate-500 border-2 border-dashed rounded-lg">
+              Nenhum processo encontrado nesta fase.
+            </p>
+          )}
         </div>
       )}
 
@@ -142,6 +173,27 @@ function RelatorioFinalPage() {
               <Button type="submit">Enviar Avaliação</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- MODAL DO RELATÓRIO FINAL --- */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 border-b">
+            <DialogTitle className="text-2xl">Relatório Final de {currentReportProcess?.titulo || 'Processo'}</DialogTitle>
+            <DialogDescription>
+              Relatório consolidado e pronto para ser entregue ao cliente.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-6">
+            <ReportModalContent processo={currentReportProcess} cliente={clientData} />
+          </div>
+
+          <DialogFooter className="p-4 border-t">
+            <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Fechar</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700">Baixar PDF (Em breve)</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

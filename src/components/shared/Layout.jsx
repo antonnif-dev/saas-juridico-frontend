@@ -114,7 +114,7 @@ function Layout() {
           </div>
 
           {/* Linha inferior do cabeçalho */}
-          <div className="flex justify-between items-center border-t border-white/20 pt-2 mt-1">
+          <div className="flex justify-between items-center border-t border-white/20">
             <div className="flex items-center gap-8 ml-4">
               <Link to="/equipe" className="text-sm opacity-80 hover:opacity-100">Equipe</Link>
               <Link to="/relatorios" className="...">Relatórios</Link>
