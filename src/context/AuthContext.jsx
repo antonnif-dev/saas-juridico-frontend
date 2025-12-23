@@ -16,11 +16,15 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setCurrentUser(user);
+        setCurrentUser({
+          ...user,
+          photoUrl: user.photoURL
+        });
+
         try {
           const tokenResult = await user.getIdTokenResult();
           const role = tokenResult.claims.role;
-          setUserRole(role || 'advogado'); // Define 'advogado' se não houver perfil
+          setUserRole(role || 'advogado');
         } catch (error) {
           console.error("AuthContext: Erro ao buscar o perfil do usuário:", error);
           setUserRole(null);

@@ -108,7 +108,7 @@ function Layout() {
             <div className="flex gap-4 font-medium">
               <Link to="/dashboard" className="hover:opacity-80">Dashboard</Link>
               <Link to="/processos" className="hover:opacity-80">Processos</Link>
-              <Link to="/clientes" className="hover:opacity-80">Clientes</Link>              
+              <Link to="/clientes" className="hover:opacity-80">Clientes</Link>
               <Link to="/agenda" className="hover:opacity-80">Agenda</Link>
             </div>
           </div>
@@ -127,8 +127,12 @@ function Layout() {
                 title="Editar Perfil"
               >
                 <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-white/30 transition-all">
-                  {currentUser?.photoUrl ? (
-                    <img src={currentUser.photoUrl} alt="Avatar" className="h-full w-full object-cover" />
+                  {(currentUser?.photoUrl || currentUser?.photoURL) ? (
+                    <img
+                      src={currentUser.photoUrl || currentUser.photoURL}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-slate-500">
                       <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
