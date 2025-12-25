@@ -63,6 +63,8 @@ function App() {
           <Route path="/processos/:id" element={<CaseDetailPage />} />
           <Route path="perfil" element={<UserProfilePage />} />
           <Route path="/mensagens" element={<MensagensPage />} />
+          <Route path="/notificacoes" element={<NotificacaoPage />} />
+          <Route path="/transacoes" element={<TransactionsPage />} />
 
           {/* 3. ROTAS DE STAFF (ADVOGADOS E ADMINS) */}
           {isStaff && (
@@ -71,14 +73,11 @@ function App() {
               <Route path="/clientes/:id" element={<ClientDetailPage />} />
               <Route path="/agenda" element={<AgendaPage />} />
               <Route path="/agenda/:id" element={<AgendaDetailPage />} />
-              <Route path="/triagem" element={<PreAtendimentoPage />} />
               <Route path="/ia-triagem" element={<IaPreAtendimentoPage />} />
               <Route path="/atendimento" element={<AtendimentoPage />} />
               <Route path="/ia-atendimento" element={<IaAtendimentoPage />} />
               <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
               <Route path="/ia-pos-atendimento" element={<IaPosAtendimentoPage />} />
-              <Route path="/notificacoes" element={<NotificacaoPage />} />
-              <Route path="/transacoes" element={<TransactionsPage />} />
               <Route path="/relatorios" element={<RelatorioFinalPage />} />
               <Route path="/ia-relatorio" element={<IaRelatorioPage />} />
             </>

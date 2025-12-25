@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 function Layout() {
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, loading } = useAuth();
+  if (loading) return null;
+  
   const [settings, setSettings] = useState({});
   const isAdmin = userRole === 'administrador';
   const isAdvogado = userRole === 'advogado';

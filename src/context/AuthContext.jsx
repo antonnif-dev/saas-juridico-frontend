@@ -24,10 +24,11 @@ export function AuthProvider({ children }) {
         try {
           const tokenResult = await user.getIdTokenResult();
           const role = tokenResult.claims.role;
-          setUserRole(role || 'advogado');
+          
+          setUserRole(role || 'cliente');
         } catch (error) {
           console.error("AuthContext: Erro ao buscar o perfil do usuário:", error);
-          setUserRole(null);
+          setUserRole('cliente');
         }
       } else {
         setCurrentUser(null);
@@ -50,8 +51,6 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {/* CORREÇÃO: Renderiza os filhos imediatamente.
-          Os componentes filhos agora são responsáveis por reagir ao 'loading'. */}
       {children}
     </AuthContext.Provider>
   );
