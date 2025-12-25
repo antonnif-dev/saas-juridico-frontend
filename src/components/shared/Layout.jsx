@@ -3,11 +3,16 @@ import { Outlet, Link } from 'react-router-dom';
 import LogoutButton from '@/components/shared/LogoutButton';
 import NavigationBars from '@/components/shared/NavigationBars';
 import { useAuth } from '@/context/AuthContext';
-import apiClient from '@/services/apiClient'; // Importante para buscar o tema
+import apiClient from '@/services/apiClient';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 function Layout() {
-  const { currentUser } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const [settings, setSettings] = useState({});
+  const isAdmin = userRole === 'administrador';
+  const isAdvogado = userRole === 'advogado';
+  const isStaff = isAdmin || isAdvogado;
 
   useEffect(() => {
     const fetchTheme = async () => {
@@ -81,7 +86,6 @@ function Layout() {
         >
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center">
-
               {/* Lógica de Logo vs Texto */}
               {settings.headerType === 'image' && settings.logoUrl ? (
                 <img
@@ -93,7 +97,6 @@ function Layout() {
                 <h1
                   className='break-all font-bold leading-tight m-0 text-center'
                   style={{
-                    // Se não tiver tamanho salvo, usa o padrão do CSS
                     fontSize: settings.headerLogoSize || 'var(--font-size-h1)',
                   }}
                   dangerouslySetInnerHTML={{
@@ -101,25 +104,42 @@ function Layout() {
                   }}
                 />
               )}
-
             </div>
 
-            {/* Links de Navegação */}
+            {/* Links de Navegação Principal */}
             <div className="flex gap-4 font-medium">
               <Link to="/dashboard" className="hover:opacity-80">Dashboard</Link>
               <Link to="/processos" className="hover:opacity-80">Processos</Link>
-              <Link to="/clientes" className="hover:opacity-80">Clientes</Link>
-              <Link to="/agenda" className="hover:opacity-80">Agenda</Link>
+
+              {/* Oculto para Clientes */}
+              {isStaff && (
+                <>
+                  <Link to="/clientes" className="hover:opacity-80">Clientes</Link>
+                  <Link to="/agenda" className="hover:opacity-80">Agenda</Link>
+                </>
+              )}
             </div>
           </div>
 
           {/* Linha inferior do cabeçalho */}
           <div className="flex justify-between items-center border-t border-white/20">
             <div className="flex items-center gap-8 ml-4">
-              <Link to="/equipe" className="text-sm opacity-80 hover:opacity-100">Equipe</Link>
-              <Link to="/relatorios" className="...">Relatórios</Link>
-              <Link to="/admin/tema" className="text-sm opacity-80 hover:opacity-100">Aparência do site</Link>
+              {/* Exclusivo Admin */}
+              {isAdmin && (
+                <Link to="/equipe" className="text-sm opacity-80 hover:opacity-100">Equipe</Link>
+              )}
+
+              {/* Oculto para Clientes */}
+              {isStaff && (
+                <Link to="/relatorios" className="text-sm opacity-80 hover:opacity-100">Relatórios</Link>
+              )}
+
+              {/* Exclusivo Admin */}
+              {isAdmin && (
+                <Link to="/admin/tema" className="text-sm opacity-80 hover:opacity-100">Aparência do site</Link>
+              )}
             </div>
+
             <div className="flex items-center gap-3">
               <Link
                 to="/perfil"
@@ -140,14 +160,13 @@ function Layout() {
                   )}
                 </div>
               </Link>
-
               <LogoutButton />
             </div>
           </div>
         </nav>
       </header>
 
-      {/* Barra Lateral / Inferior */}
+      {/* Barra Lateral / Inferior - Também precisará de filtro interno */}
       <NavigationBars />
 
       <main className="p-5 pb-24 md:pb-8 md:mx-24 transition-all duration-300">

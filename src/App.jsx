@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 //import { auth } from './services/firebase'; //Função gerar token
 //Usar esse código no console logado com administrador
 //window.auth.currentUser.getIdToken(/* forceRefresh */ true).then(token => console.log(token));
@@ -38,39 +39,63 @@ import IaRelatorioPage from './pages/IaRelatorioPage';
 import EditAdvogadoPage from './pages/EditAdvogadoPage';
 
 function App() {
+  const { userRole, loading } = useAuth();
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Sincronizando permissões...</div>;
+  }
+
+  const isAdmin = userRole === 'administrador';
+  const isStaff = userRole === 'administrador' || userRole === 'advogado';
   //window.auth = auth;  //Função gerar token
   return (
     <Routes>
+      {/* 1. ROTAS PÚBLICAS */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route path="/portal/login" element={<ClientLoginPage />} />
       <Route path="/pre-atendimento" element={<PreAtendimentoPage />} />
+
+      {/* 2. ROTAS PROTEGIDAS (LAYOUT COMUM) */}
       <Route element={<PrivateRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/processos" element={<CasesPage />} />
           <Route path="/processos/:id" element={<CaseDetailPage />} />
-          <Route path="/clientes" element={<ClientsPage />} />
-          <Route path="/clientes/:id" element={<ClientDetailPage />} />
-          <Route path="/agenda" element={<AgendaPage />} />
-          <Route path="/agenda/:id" element={<AgendaDetailPage />} />
-          <Route path="/equipe" element={<EquipePage />} />
-          <Route path="/equipe/:id" element={<EditAdvogadoPage />} />
-          <Route path="/admin/tema" element={<AdminThemePage />} />
-          <Route path="/triagem" element={<PreAtendimentoPage />} />
-          <Route path="/ia-triagem" element={<IaPreAtendimentoPage />} />
-          <Route path="/atendimento" element={<AtendimentoPage />} />
-          <Route path="/ia-atendimento" element={<IaAtendimentoPage />} />
-          <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
-          <Route path="/ia-pos-atendimento" element={<IaPosAtendimentoPage />} />
-          <Route path="/notificacoes" element={<NotificacaoPage />} />
-          <Route path="/mensagens" element={<MensagensPage />} />
-          <Route path="/transacoes" element={<TransactionsPage />} />
           <Route path="perfil" element={<UserProfilePage />} />
-          <Route path="/relatorios" element={<RelatorioFinalPage />} />
-          <Route path="/ia-relatorio" element={<IaRelatorioPage />} />
+          <Route path="/mensagens" element={<MensagensPage />} />
+
+          {/* 3. ROTAS DE STAFF (ADVOGADOS E ADMINS) */}
+          {isStaff && (
+            <>
+              <Route path="/clientes" element={<ClientsPage />} />
+              <Route path="/clientes/:id" element={<ClientDetailPage />} />
+              <Route path="/agenda" element={<AgendaPage />} />
+              <Route path="/agenda/:id" element={<AgendaDetailPage />} />
+              <Route path="/triagem" element={<PreAtendimentoPage />} />
+              <Route path="/ia-triagem" element={<IaPreAtendimentoPage />} />
+              <Route path="/atendimento" element={<AtendimentoPage />} />
+              <Route path="/ia-atendimento" element={<IaAtendimentoPage />} />
+              <Route path="/pos-atendimento" element={<PosAtendimentoPage />} />
+              <Route path="/ia-pos-atendimento" element={<IaPosAtendimentoPage />} />
+              <Route path="/notificacoes" element={<NotificacaoPage />} />
+              <Route path="/transacoes" element={<TransactionsPage />} />
+              <Route path="/relatorios" element={<RelatorioFinalPage />} />
+              <Route path="/ia-relatorio" element={<IaRelatorioPage />} />
+            </>
+          )}
+
+          {/* 4. ROTAS DE ADMINISTRAÇÃO */}
+          {isAdmin && (
+            <>
+              <Route path="/equipe" element={<EquipePage />} />
+              <Route path="/equipe/:id" element={<EditAdvogadoPage />} />
+              <Route path="/admin/tema" element={<AdminThemePage />} />
+            </>
+          )}
         </Route>
       </Route>
+
+      {/* 5. PORTAL DO CLIENTE */}
       <Route element={<PrivateRoute />}>
         <Route path="/portal/dashboard" element={<ClientDashboardPage />} />
         <Route path="/portal/processos/:id" element={<ClientCaseDetailPage />} />

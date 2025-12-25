@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
+import { useAuth } from '../context/AuthContext';
 
 function CaseDetailPage() {
   const { id: processoId } = useParams();
   const navigate = useNavigate();
+  const { currentUser, isAdmin } = useAuth();
 
   const [caseDetail, setCaseDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -157,23 +159,25 @@ function CaseDetailPage() {
       alert('Não foi possível atualizar.');
     }
   };
-    const handlePreviewClick = (doc) => {
-      if (doc.tipo && doc.tipo.startsWith('image/')) {
-        setPreviewFile(doc);
-      } else if (doc.tipo === 'application/pdf') {
-        window.open(doc.url, '_blank');
-      } else {
-        const link = document.createElement('a');
-        link.href = doc.url;
-        link.setAttribute('download', doc.nome);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    };
+  const handlePreviewClick = (doc) => {
+    if (doc.tipo && doc.tipo.startsWith('image/')) {
+      setPreviewFile(doc);
+    } else if (doc.tipo === 'application/pdf') {
+      window.open(doc.url, '_blank');
+    } else {
+      const link = document.createElement('a');
+      link.href = doc.url;
+      link.setAttribute('download', doc.nome);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   if (loading) return <p>Carregando detalhes do processo...</p>;
   if (!caseDetail) return <p>Processo não encontrado.</p>;
+
+  const podeEditar = isAdmin || caseDetail?.responsavelUid === currentUser?.uid;
 
   return (
     <div style={{ padding: '20px' }}>
@@ -197,6 +201,14 @@ function CaseDetailPage() {
           <p><strong>Instância:</strong> {caseDetail.instancia}</p>
           <button onClick={() => setIsEditing(true)}>Editar</button>
           <button onClick={handleDelete} style={{ marginLeft: '10px', background: 'darkred', color: 'white' }}>Excluir</button>
+          {podeEditar && (
+            <>
+              <button onClick={() => setIsEditing(true)}>Editar</button>
+              <button onClick={handleDelete} style={{ marginLeft: '10px', background: 'darkred', color: 'white' }}>
+                Excluir
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -204,17 +216,21 @@ function CaseDetailPage() {
 
       <div className='w-full'>
         <h3>Linha do Tempo / Movimentações</h3>
-        <form onSubmit={handleAddMovimentacao} style={{ marginBottom: '20px' }}>
-          <textarea
-            value={novaMovimentacao}
-            onChange={(e) => setNovaMovimentacao(e.target.value)}
-            placeholder="Registre uma nova movimentação..."
-            style={{ width: '100%', minHeight: '80px', marginBottom: '10px' }}
-            className='textarea-base'
-            required
-          />
-          <button type="submit">Registrar Movimentação</button>
-        </form>
+        {podeEditar ? (
+          <form onSubmit={handleAddMovimentacao} style={{ marginBottom: '20px' }}>
+            <textarea
+              value={novaMovimentacao}
+              onChange={(e) => setNovaMovimentacao(e.target.value)}
+              placeholder="Registre uma nova movimentação..."
+              style={{ width: '100%', minHeight: '80px', marginBottom: '10px' }}
+              className='textarea-base'
+              required
+            />
+            <button type="submit">Registrar Movimentação</button>
+          </form>
+        ) : (
+          <p className="text-slate-500 italic">Apenas o advogado responsável pode registrar movimentações.</p>
+        )}
 
         {movimentacoes.length > 0 ? (
           movimentacoes.map(mov => (
@@ -235,10 +251,12 @@ function CaseDetailPage() {
               ) : (
                 <div>
                   <p style={{ margin: 0 }}>{mov.descricao}</p>
-                  <div style={{ marginTop: '10px' }}>
-                    <button onClick={() => handleEditClick(mov)} style={{ fontSize: '0.8em', padding: '2px 5px' }}>Editar</button>
-                    <button onClick={() => handleDeleteMovimentacao(mov.id)} style={{ marginLeft: '5px', fontSize: '0.8em', padding: '2px 5px' }}>Excluir</button>
-                  </div>
+                  {podeEditar && (
+                    <div style={{ marginTop: '10px' }}>
+                      <button onClick={() => handleEditClick(mov)} style={{ fontSize: '0.8em', padding: '2px 5px' }}>Editar</button>
+                      <button onClick={() => handleDeleteMovimentacao(mov.id)} style={{ marginLeft: '5px', fontSize: '0.8em', padding: '2px 5px' }}>Excluir</button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -267,10 +285,16 @@ function CaseDetailPage() {
         </ul>
         <div>
           <h4>Adicionar Novo Documento</h4>
-          <input id="file-input" type="file" onChange={handleFileChange} className='input-base' />
-          <button onClick={handleFileUpload} disabled={!selectedFile || isUploading}>
-            {isUploading ? 'Enviando...' : 'Enviar Documento'}
-          </button>
+          {podeEditar ? (
+            <>
+              <input id="file-input" type="file" onChange={handleFileChange} className='input-base' />
+              <button onClick={handleFileUpload} disabled={!selectedFile || isUploading}>
+                {isUploading ? 'Enviando...' : 'Enviar Documento'}
+              </button>
+            </>
+          ) : (
+            <p className="text-xs text-slate-400">Upload restrito ao responsável pelo caso.</p>
+          )}
         </div>
       </div>
 

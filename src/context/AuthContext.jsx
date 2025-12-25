@@ -42,6 +42,9 @@ export function AuthProvider({ children }) {
   const value = {
     currentUser,
     userRole,
+    isAdmin: userRole === 'administrador',
+    isAdvogado: userRole === 'advogado',
+    isCliente: userRole === 'cliente',
     loading
   };
 
