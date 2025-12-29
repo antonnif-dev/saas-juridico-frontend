@@ -65,6 +65,7 @@ function App() {
           <Route path="/mensagens" element={<MensagensPage />} />
           <Route path="/notificacoes" element={<NotificacaoPage />} />
           <Route path="/transacoes" element={<TransactionsPage />} />
+          <Route path="/triagem" element={<PreAtendimentoPage />} />
 
           {/* 3. ROTAS DE STAFF (ADVOGADOS E ADMINS) */}
           {isStaff && (

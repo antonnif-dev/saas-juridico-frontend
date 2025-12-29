@@ -46,24 +46,34 @@ function LoginPage() {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
 
       {/* 1. NAVBAR: Identidade e Navegação */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-slate-900/10 bg-white/95 supports-backdrop-blur:bg-white/60">
+      <header className="sticky top-0 z-40 w-full backdrop-blur bg-white/95">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2 text-slate-900">
+
+          {/* Logo */}
+          <div className="flex pr-4 items-center gap-2 text-slate-900">
             <div className="bg-slate-900 p-1.5 rounded-md">
               <Scale className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-serif font-bold tracking-tight">Escritório (+)</span>
+            <span className="text-xl font-serif font-bold tracking-tight leading-tight">
+              <span className="block">Escritório</span>
+              <span className="block">Saas &</span>
+              <span className="block">Jurídico</span>
+            </span>
           </div>
 
-          <nav className="flex justify-center gap-2 md:gap-16 text-sm font-medium text-slate-600">
-            <a href="#" className="hover:text-primary transition-colors">Áreas de Atuação</a>
-            <a href="#" className="hover:text-primary transition-colors">Nossa Equipe</a>
-            <a href="#" className="hover:text-primary transition-colors">Jurisprudência</a>
-          </nav>
+          {/* Nav + Botão */}
+          <div className="flex flex-col items-center gap-3">
+            <nav className="flex gap-2 md:gap-16 text-sm font-medium text-slate-600">
+              <a href="#" className="hover:text-primary transition-colors">Áreas de Atuação</a>
+              <a href="#" className="hover:text-primary transition-colors">Nossa Equipe</a>
+              <a href="#" className="hover:text-primary transition-colors">Jurisprudência</a>
+            </nav>
 
-          <Button variant="outline" className="flex items-end">
-            Fale Conosco
-          </Button>
+            <Button variant="outline" className="ml-auto">
+              Fale Conosco
+            </Button>
+          </div>
+
         </div>
       </header>
 

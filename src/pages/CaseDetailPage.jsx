@@ -16,6 +16,15 @@ function CaseDetailPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
+  const [advogados, setAdvogados] = useState([]);
+  const [isTransferring, setIsTransferring] = useState(false);
+  useEffect(() => {
+    if (isAdmin) {
+      apiClient.get('/users/advogado') // Alinhado com a sua rota de listagem no backend
+        .then(res => setAdvogados(res.data))
+        .catch(err => console.error("Erro ao carregar advogados:", err));
+    }
+  }, [isAdmin]);
 
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [novaMovimentacao, setNovaMovimentacao] = useState('');
@@ -159,6 +168,24 @@ function CaseDetailPage() {
       alert('Não foi possível atualizar.');
     }
   };
+
+  const handleTransferCase = async (novoResponsavelUid) => {
+    if (!window.confirm('Deseja transferir a responsabilidade deste processo?')) return;
+
+    setIsTransferring(true);
+    try {
+      await apiClient.put(`/processo/${processoId}`, {
+        responsavelUid: novoResponsavelUid
+      });
+      alert('Responsabilidade transferida com sucesso!');
+      fetchData(); // Recarrega para atualizar o UID do responsável localmente
+    } catch (error) {
+      alert('Erro ao transferir processo.');
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
   const handlePreviewClick = (doc) => {
     if (doc.tipo && doc.tipo.startsWith('image/')) {
       setPreviewFile(doc);
@@ -208,6 +235,37 @@ function CaseDetailPage() {
                 Excluir
               </button>
             </>
+          )}
+
+          {isAdmin && (
+            <div style={{
+              marginTop: '20px',
+              padding: '15px',
+              backgroundColor: '#eef2f7',
+              borderRadius: '8px',
+              border: '1px solid #d1d9e6'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0' }}>Gestão de Responsabilidade (Admin)</h4>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <select
+                  value={formData.responsavelUid || ''}
+                  onChange={(e) => handleTransferCase(e.target.value)}
+                  disabled={isTransferring}
+                  style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', flex: 1 }}
+                >
+                  <option value="">Selecione um responsável...</option>
+                  {advogados.map(adv => (
+                    <option key={adv.uid} value={adv.uid}>
+                      {adv.name} (OAB: {adv.oab || 'N/A'})
+                    </option>
+                  ))}
+                </select>
+                {isTransferring && <span style={{ fontSize: '0.8em' }}>Processando...</span>}
+              </div>
+              <p style={{ fontSize: '0.75em', color: '#666', marginTop: '5px' }}>
+                * Ao transferir, o advogado anterior perderá permissão de edição.
+              </p>
+            </div>
           )}
         </div>
       )}

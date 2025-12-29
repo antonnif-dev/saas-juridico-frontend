@@ -106,18 +106,25 @@ function UserProfilePage() {
     const file = e.target.files[0];
     if (!file) return;
 
-    setPhotoPreview(URL.createObjectURL(file));
+    const localPreview = URL.createObjectURL(file);
+    setPhotoPreview(localPreview);
     setUploading(true);
 
     const data = new FormData();
     data.append('photo', file);
 
     try {
-      await apiClient.post('/users/me/photo', data);
-      window.location.reload();
+      const response = await apiClient.post('/users/me/photo', data);
+
+      if (response.data && response.data.photoUrl) {
+        setPhotoPreview(response.data.photoUrl);
+        alert("Foto de perfil atualizada com sucesso!");
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Erro no upload:", error);
       alert("Erro ao enviar foto.");
+      setPhotoPreview(formData.photoUrl);
+    } finally {
       setUploading(false);
     }
   };
