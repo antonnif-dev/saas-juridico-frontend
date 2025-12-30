@@ -18,20 +18,43 @@ function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState({ totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
   const [loading, setLoading] = useState(true);
+  const [allTransactions, setAllTransactions] = useState([]);
+  const [displayTransactions, setDisplayTransactions] = useState([]);
+
+
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  const handleMarkAsPaid = async (id) => {
+    if (!window.confirm("Confirmar o recebimento deste valor?")) return;
+
+    try {
+      await apiClient.patch(`/financial/transactions/${id}/pay`); // Precisaremos criar esta rota
+      toast.success("Pagamento confirmado!");
+      // Recarregar os dados para atualizar os cards e a lista
+      loadFinancialData();
+    } catch (error) {
+      toast.error("Erro ao processar pagamento.");
+    }
+  };
 
   useEffect(() => {
-    // Criamos uma função interna assíncrona
     const loadFinancialData = async () => {
       try {
         setLoading(true);
         const { data } = await apiClient.get('/financial/transactions');
 
-        // Atribuímos os dados vindos do backend
-        setTransactions(data.transactions || []);
+        // 1. Armazena a lista completa (imutável para o frontend)
+        const txs = data.transactions || [];
+        setAllTransactions(txs);
+
+        // 2. Inicializa a lista de exibição com todos os dados
+        setDisplayTransactions(txs);
+
+        // 3. Atualiza os cards de resumo
         setSummary(data.summary || { totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
+
       } catch (error) {
         console.error("Erro ao carregar dados financeiros:", error);
-        // toast.error("Não foi possível carregar o financeiro.");
       } finally {
         setLoading(false);
       }
@@ -39,6 +62,16 @@ function TransactionsPage() {
 
     loadFinancialData();
   }, []);
+
+  useEffect(() => {
+    let filtered = allTransactions;
+
+    if (filterStatus !== 'all') {
+      filtered = allTransactions.filter(t => t.status === filterStatus);
+    }
+
+    setDisplayTransactions(filtered);
+  }, [filterStatus, allTransactions]);
 
   const formatMoney = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -112,6 +145,33 @@ function TransactionsPage() {
         )}
       </div>
 
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <Input
+          placeholder="Pesquisar por título ou cliente..."
+          className="max-w-sm"
+          onChange={(e) => {
+            const term = e.target.value.toLowerCase();
+            setFilteredTransactions(
+              transactions.filter(t =>
+                t.titulo.toLowerCase().includes(term) ||
+                t.clienteNome?.toLowerCase().includes(term)
+              )
+            );
+          }}
+        />
+        <Select onValueChange={(val) => setFilterStatus(val)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todos os Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+            <SelectItem value="paid">Pagos</SelectItem>
+            <SelectItem value="overdue">Atrasados</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Tabela de Transações */}
       <Card>
         <CardHeader>
@@ -131,7 +191,7 @@ function TransactionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((txn) => (
+                {displayTransactions.map((txn) => (
                   <TableRow key={txn.id}>
                     <TableCell className="font-medium">
                       {txn.titulo}
