@@ -34,6 +34,16 @@ function AtendimentoPage() {
   const [selectedProcess, setSelectedProcess] = useState(null);
   const [decisionResult, setDecisionResult] = useState('');
 
+  // --- ESTADOS PARA FINANCEIRO ---
+  const [financeModalOpen, setFinanceModalOpen] = useState(false);
+  const [financeData, setFinanceData] = useState({
+    titulo: '',
+    valor: '',
+    categoria: 'honorarios',
+    processoId: '',
+    clientId: ''
+  });
+
   // Busca Processos
   const fetchCases = async () => {
     setLoading(true);
@@ -101,6 +111,27 @@ function AtendimentoPage() {
       alert(`Decisão registrada! O processo foi movido para a fase de Pós-Atendimento.`);
       fetchCases(); // Recarrega a lista (o card vai sumir daqui)
     } catch (error) { alert("Erro ao registrar decisão."); }
+  };
+
+  const handleAddFinance = async () => {
+    if (!financeData.titulo || !financeData.valor) return alert("Preencha título e valor.");
+
+    try {
+      await apiClient.post('/financial/transactions', {
+        ...financeData,
+        valor: parseFloat(financeData.valor),
+        tipo: 'receita', // Definido como receita por padrão neste botão
+        status: 'pending',
+        dataVencimento: new Date() // Simplificado para o teste
+      });
+
+      setFinanceModalOpen(false);
+      alert("Cobrança registrada com sucesso!");
+      setFinanceData({ titulo: '', valor: '', categoria: 'honorarios', processoId: '', clientId: '' });
+    } catch (error) {
+      console.error("Erro ao salvar financeiro:", error);
+      alert("Erro ao registrar cobrança.");
+    }
   };
 
   // --- RENDERIZAÇÃO DO RODAPÉ INTELIGENTE ---
@@ -278,17 +309,39 @@ function AtendimentoPage() {
                       </TabsContent>
 
                       <TabsContent value="financeiro" className="space-y-3">
-                        <div className="flex justify-between items-center bg-slate-50 p-2 rounded border">
-                          <div className="text-xs">
-                            <span className="text-slate-500 block">Total Cobrado</span>
-                            <span className="font-bold text-slate-800">R$ 0,00</span>
-                          </div>
-                        </div>
+                        {/* ... (manter o bloco de Total Cobrado) */}
                         <div className="grid grid-cols-2 gap-2 pt-1">
-                          <Button variant="outline" size="sm" className="text-xs h-8 border-green-200 text-green-700 hover:bg-green-50">
+                          <Button
+                            variant="outline" size="sm"
+                            className="text-xs h-8 border-green-200 text-green-700 hover:bg-green-50"
+                            onClick={() => {
+                              setFinanceData({
+                                titulo: `Honorários - ${processo.titulo}`,
+                                valor: '',
+                                categoria: 'honorarios',
+                                processoId: processo.id,
+                                clientId: processo.clientId
+                              });
+                              setFinanceModalOpen(true);
+                            }}
+                          >
                             <DollarSign className="w-3 h-3 mr-1" /> + Honorário
                           </Button>
-                          <Button variant="outline" size="sm" className="text-xs h-8 border-orange-200 text-orange-700 hover:bg-orange-50">
+
+                          <Button
+                            variant="outline" size="sm"
+                            className="text-xs h-8 border-orange-200 text-orange-700 hover:bg-orange-50"
+                            onClick={() => {
+                              setFinanceData({
+                                titulo: `Custa - ${processo.titulo}`,
+                                valor: '',
+                                categoria: 'custas',
+                                processoId: processo.id,
+                                clientId: processo.clientId
+                              });
+                              setFinanceModalOpen(true);
+                            }}
+                          >
                             <Receipt className="w-3 h-3 mr-1" /> + Custa/Despesa
                           </Button>
                         </div>
@@ -340,6 +393,42 @@ function AtendimentoPage() {
             <Button variant="outline" onClick={() => setDecisionModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleSaveDecision} className="bg-purple-600 text-white hover:bg-purple-700">
               Salvar e Mover
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL DE ADICIONAR COBRANÇA */}
+      <Dialog open={financeModalOpen} onOpenChange={setFinanceModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Cobrança Financeira</DialogTitle>
+            <DialogDescription>Registre um novo lançamento vinculado a este processo.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Descrição da Cobrança</label>
+              <Input
+                value={financeData.titulo}
+                onChange={(e) => setFinanceData({ ...financeData, titulo: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Valor (R$)</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={financeData.valor}
+                onChange={(e) => setFinanceData({ ...financeData, valor: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinanceModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddFinance} className="bg-green-600 hover:bg-green-700 text-white">
+              Confirmar Lançamento
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,53 +9,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
+//import { toast } from 'sonner';
 
 function TransactionsPage() {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
-  
+
   const [transactions, setTransactions] = useState([]);
+  const [summary, setSummary] = useState({ totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Simulação de busca de dados (Backend Futuro)
   useEffect(() => {
-    // Em breve: const { data } = await apiClient.get('/financial/transactions');
-    const mockData = [
-      { 
-        id: 'txn_001', 
-        titulo: 'Honorários - Caso Silva vs Estado', 
-        cliente: 'João Silva', 
-        valor: 1500.00, 
-        vencimento: new Date(2025, 10, 15), 
-        status: 'paid', // paid, pending, overdue
-        metodo: 'Pix'
-      },
-      { 
-        id: 'txn_002', 
-        titulo: 'Consulta Inicial - Trabalhista', 
-        cliente: 'Maria Oliveira', 
-        valor: 350.00, 
-        vencimento: new Date(2025, 10, 20), 
-        status: 'pending',
-        metodo: 'Aguardando'
-      },
-      { 
-        id: 'txn_003', 
-        titulo: 'Honorários - Divórcio', 
-        cliente: 'Carlos Souza', 
-        valor: 5000.00, 
-        vencimento: new Date(2025, 9, 30), 
-        status: 'overdue',
-        metodo: 'Boleto'
-      }
-    ];
+    // Criamos uma função interna assíncrona
+    const loadFinancialData = async () => {
+      try {
+        setLoading(true);
+        const { data } = await apiClient.get('/financial/transactions');
 
-    // Filtra se for cliente (simulação)
-    // Se fosse real, o backend já filtraria pelo token
-    setTimeout(() => {
-      setTransactions(mockData); 
-      setLoading(false);
-    }, 800);
+        // Atribuímos os dados vindos do backend
+        setTransactions(data.transactions || []);
+        setSummary(data.summary || { totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
+      } catch (error) {
+        console.error("Erro ao carregar dados financeiros:", error);
+        // toast.error("Não foi possível carregar o financeiro.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFinancialData();
   }, []);
 
   const formatMoney = (value) => {
@@ -89,33 +71,41 @@ function TransactionsPage() {
       {/* Cards de Resumo (Só Admin vê o total geral, Cliente vê o dele) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pendente</CardTitle>
-            <CalendarClock className="h-4 w-4 text-yellow-600" />
+          <CardHeader className="...">
+            <CardTitle className="...">Total Pendente</CardTitle>
+            <CalendarClock className="..." />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-700">R$ 350,00</div>
+            <div className="text-2xl font-bold text-yellow-700">
+              {formatMoney(summary.totalPendente)}
+            </div>
             <p className="text-xs text-muted-foreground">Aguardando pagamento</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pago (Mês)</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <CardHeader className="...">
+            <CardTitle className="...">Total Pago (Mês)</CardTitle>
+            <CheckCircle2 className="..." />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700">R$ 1.500,00</div>
-            <p className="text-xs text-muted-foreground">+20% em relação ao mês anterior</p>
+            {/* ANTES: <div className="...">R$ 1.500,00</div> */}
+            <div className="text-2xl font-bold text-green-700">
+              {formatMoney(summary.totalPago)}
+            </div>
+            <p className="text-xs text-muted-foreground">Valores liquidados</p>
           </CardContent>
         </Card>
         {isAdmin && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Atraso</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-600" />
+            <CardHeader className="...">
+              <CardTitle className="...">Em Atraso</CardTitle>
+              <AlertCircle className="..." />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-700">R$ 5.000,00</div>
+              {/* ANTES: <div className="...">R$ 5.000,00</div> */}
+              <div className="text-2xl font-bold text-red-700">
+                {formatMoney(summary.totalAtrasado)}
+              </div>
               <p className="text-xs text-muted-foreground">Ações de cobrança necessárias</p>
             </CardContent>
           </Card>
@@ -148,7 +138,9 @@ function TransactionsPage() {
                       <div className="text-xs text-muted-foreground md:hidden">{formatMoney(txn.valor)} • {txn.status}</div>
                     </TableCell>
                     {isAdmin && <TableCell>{txn.cliente}</TableCell>}
-                    <TableCell>{format(txn.vencimento, 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                    <TableCell>
+                      {txn.vencimento && (format(new Date(txn.dataVencimento?._seconds * 1000 || txn.dataVencimento), 'dd/MM/yyyy', { locale: ptBR }))}
+                    </TableCell>
                     <TableCell className="hidden md:table-cell font-bold text-slate-700">
                       {formatMoney(txn.valor)}
                     </TableCell>
