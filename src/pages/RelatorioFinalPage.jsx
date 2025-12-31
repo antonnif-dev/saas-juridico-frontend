@@ -51,16 +51,48 @@ function RelatorioFinalPage() {
   };
 
   const handleViewReport = async (processo) => {
+    setIsReportModalOpen(true); // Abrir imediatamente para melhorar a UX
+    setLoading(true);
     try {
-      const clientRes = await apiClient.get(`/clients/${processo.clientId}`);
-      setClientData(clientRes.data);
-    } catch (e) {
-      console.warn("Cliente não encontrado, usando dados limitados.");
-      setClientData({});
-    }
+      // 1. Tentar buscar transações e movimentações em paralelo
+      // Precisamos das movimentações para o "histórico do caso" no relatório
+      const [financialRes, movRes] = await Promise.all([
+        apiClient.get(`/financial/transactions/process/${processo.id}`),
+        apiClient.get(`/processo/${processo.id}/movimentacoes`)
+      ]);
 
-    setCurrentReportProcess(processo);
-    setIsReportModalOpen(true);
+      // 2. Busca de Cliente com tratamento de erro (Evita o travamento 404)
+      let clientData = { name: "Cliente não identificado" };
+      try {
+        const clientRes = await apiClient.get(`/clientes/${processo.clientId}`);
+        clientData = clientRes.data;
+      } catch (err) {
+        console.warn("Dados do cliente não encontrados no cadastro.");
+      }
+
+      const transactions = financialRes.data || [];
+      const movimentacoes = movRes.data || [];
+
+      // 3. Cálculo do Balanço
+      const balance = transactions.reduce((acc, t) => {
+        const val = parseFloat(t.valor);
+        return t.tipo === 'despesa' ? acc - val : acc + val;
+      }, 0);
+
+      setCurrentReportProcess({
+        ...processo,
+        transactions,
+        movimentacoes, // Adicionado para o histórico completo
+        balance
+      });
+      setClientData(clientData);
+
+    } catch (e) {
+      console.error("Erro ao consolidar relatório:", e);
+      alert("Erro ao carregar alguns dados do relatório.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

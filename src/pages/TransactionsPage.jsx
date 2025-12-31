@@ -2,16 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
+import apiClient from '@/services/apiClient';
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, CalendarClock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { DollarSign, CalendarClock, CheckCircle2, AlertCircle, Receipt, Clock, PlusCircle } from 'lucide-react';
 //import { toast } from 'sonner';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function TransactionsPage() {
+  const [processes, setProcesses] = useState([]);
   const { userRole } = useAuth();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
 
@@ -21,6 +33,56 @@ function TransactionsPage() {
   const [allTransactions, setAllTransactions] = useState([]);
   const [displayTransactions, setDisplayTransactions] = useState([]);
 
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [expenseData, setExpenseData] = useState({
+    titulo: "",
+    valor: "",
+    tipo: "despesa",
+    categoria: "custas",
+    status: "paid", // Despesas geralmente são registradas já pagas
+    processoId: ""
+  });
+
+  const handleCreateExpense = async () => {
+    try {
+      // 1. Localiza o processo completo na lista que você buscou no useEffect
+      const processoAlvo = processes.find(p => p.id === expenseData.processoId);
+
+      if (!expenseData.titulo || !expenseData.valor || !processoAlvo) {
+        alert("Por favor, selecione um processo e preencha todos os campos.");
+        return;
+      }
+
+      const payload = {
+        titulo: expenseData.titulo,
+        valor: parseFloat(expenseData.valor),
+        tipo: "despesa", // Garante o tipo correto para o cálculo
+        categoria: "custas",
+        status: "pending", // Ou "paid", conforme sua necessidade
+        processoId: processoAlvo.id,
+        clientId: processoAlvo.clientId, // ESSENCIAL para os cards atualizarem
+        clienteNome: processoAlvo.clienteNome || processoAlvo.cliente || "Escritório",
+        dataVencimento: new Date().toISOString()
+      };
+
+      await apiClient.post('/financial/transactions', payload);
+
+      alert("Despesa lançada com sucesso!");
+      setIsExpenseModalOpen(false);
+
+      setExpenseData({
+        titulo: "", valor: "", tipo: "despesa", categoria: "custas", status: "paid", processoId: ""
+      });
+
+      loadFinancialData();
+    } catch (error) {
+      console.error("Erro ao lançar despesa:", error);
+      alert("Erro ao salvar. Verifique se todos os campos estão preenchidos.");
+    }
+  };
 
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -37,41 +99,63 @@ function TransactionsPage() {
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // 2. Extraia a função de carregamento para fora do useEffect para que ela seja acessível
+  const loadFinancialData = async () => {
+    try {
+      setLoading(true);
+      const { data } = await apiClient.get('/financial/transactions');
+      const txs = data.transactions || [];
+      setAllTransactions(txs);
+      setSummary(data.summary || { totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
+    } catch (error) {
+      console.error("Erro ao carregar dados financeiros:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. UseEffects Limpos
   useEffect(() => {
-    const loadFinancialData = async () => {
-      try {
-        setLoading(true);
-        const { data } = await apiClient.get('/financial/transactions');
-
-        // 1. Armazena a lista completa (imutável para o frontend)
-        const txs = data.transactions || [];
-        setAllTransactions(txs);
-
-        // 2. Inicializa a lista de exibição com todos os dados
-        setDisplayTransactions(txs);
-
-        // 3. Atualiza os cards de resumo
-        setSummary(data.summary || { totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
-
-      } catch (error) {
-        console.error("Erro ao carregar dados financeiros:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    if (isAdmin) {
+      const fetchProcesses = async () => {
+        try {
+          const { data } = await apiClient.get('/processo');
+          setProcesses(data);
+        } catch (e) { console.error(e); }
+      };
+      fetchProcesses();
+    }
     loadFinancialData();
-  }, []);
+  }, [isAdmin]);
 
+  // 4. Lógica ÚNICA de Filtragem (Status + Pesquisa)
   useEffect(() => {
-    let filtered = allTransactions;
+    let filtered = [...allTransactions];
 
+    // Filtro de Mês e Ano
+    filtered = filtered.filter(txn => {
+      const data = new Date(txn.dataVencimento);
+      return data.getMonth() === selectedMonth && data.getFullYear() === selectedYear;
+    });
+
+    // Filtro por Status
     if (filterStatus !== 'all') {
-      filtered = allTransactions.filter(t => t.status === filterStatus);
+      filtered = filtered.filter(t => t.status === filterStatus);
+    }
+
+    // Filtro por Pesquisa (Título ou Cliente)
+    if (searchQuery) {
+      const term = searchQuery.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.titulo?.toLowerCase().includes(term) ||
+        t.cliente?.toLowerCase().includes(term)
+      );
     }
 
     setDisplayTransactions(filtered);
-  }, [filterStatus, allTransactions]);
+  }, [allTransactions, filterStatus, searchQuery, selectedMonth, selectedYear]);
 
   const formatMoney = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -90,6 +174,17 @@ function TransactionsPage() {
     alert(`Redirecionando para gateway de pagamento (Stripe/Asaas/etc) para pagar: ${formatMoney(txn.valor)}`);
   };
 
+  const handleConfirmPayment = async (transactionId) => {
+    if (!window.confirm("Deseja confirmar o recebimento deste valor?")) return;
+    try {
+      await apiClient.post(`/financial/transactions/${transactionId}/pay`);
+      alert("Pagamento confirmado!");
+      loadFinancialData(); // Agora esta função está acessível aqui
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex justify-between items-center">
@@ -99,6 +194,16 @@ function TransactionsPage() {
             {isAdmin ? "Gerencie as cobranças e receitas do escritório." : "Consulte e realize pagamentos dos seus honorários."}
           </p>
         </div>
+
+        {/* ADICIONE ESTE BLOCO AQUI */}
+        {isAdmin && (
+          <Button
+            onClick={() => setIsExpenseModalOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" /> Lançar Despesa
+          </Button>
+        )}
       </div>
 
       {/* Cards de Resumo (Só Admin vê o total geral, Cliente vê o dele) */}
@@ -149,15 +254,8 @@ function TransactionsPage() {
         <Input
           placeholder="Pesquisar por título ou cliente..."
           className="max-w-sm"
-          onChange={(e) => {
-            const term = e.target.value.toLowerCase();
-            setFilteredTransactions(
-              transactions.filter(t =>
-                t.titulo.toLowerCase().includes(term) ||
-                t.clienteNome?.toLowerCase().includes(term)
-              )
-            );
-          }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
         <Select onValueChange={(val) => setFilterStatus(val)}>
           <SelectTrigger className="w-[180px]">
@@ -170,6 +268,29 @@ function TransactionsPage() {
             <SelectItem value="overdue">Atrasados</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex gap-4 mb-6">
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+          className="border rounded p-3 px-10 bg-white"
+        >
+          {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map((mes, index) => (
+              <option key={index} value={index}>{mes}</option>
+            ))}
+        </select>
+
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          className="border rounded p-2 px-10 bg-white"
+        >
+          {[2024, 2025, 2026].map(ano => (
+            <option key={ano} value={ano}>{ano}</option>
+          ))}
+        </select>
       </div>
 
       {/* Tabela de Transações */}
@@ -186,8 +307,9 @@ function TransactionsPage() {
                   {isAdmin && <TableHead>Cliente</TableHead>}
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Valor</TableHead>
+                  {/* necessários? descomentar para habilitar Status e Ações  
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>*/}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -208,19 +330,35 @@ function TransactionsPage() {
                       {getStatusBadge(txn.status)}
                     </TableCell>
                     <TableCell className="text-right">
+                      {/* AÇÃO PARA O CLIENTE: Botão de Pagar */}
                       {txn.status === 'pending' && !isAdmin && (
                         <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handlePaymentAction(txn)}>
                           <DollarSign className="w-3 h-3 mr-1" /> Pagar
                         </Button>
                       )}
+
+                      {/* AÇÃO PARA O ADMIN: Confirmar que o dinheiro caiu (Dar Baixa) */}
                       {txn.status === 'pending' && isAdmin && (
-                        <Button size="sm" variant="outline" className="text-xs">
-                          Reenviar Cobrança
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs border-green-200 text-green-700 hover:bg-green-50"
+                            onClick={() => handleConfirmPayment(txn.id)} // Função que criamos antes
+                          >
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> Confirmar Recebimento
+                          </Button>
+
+                          <Button size="sm" variant="ghost" className="text-xs text-slate-400">
+                            Reenviar
+                          </Button>
+                        </div>
                       )}
+
+                      {/* EXIBIÇÃO PARA AMBOS: Quando já está pago */}
                       {txn.status === 'paid' && (
                         <Button size="sm" variant="ghost" className="text-xs text-blue-600">
-                          Ver Recibo
+                          <Receipt className="w-3 h-3 mr-1" /> Ver Recibo
                         </Button>
                       )}
                     </TableCell>
@@ -231,6 +369,58 @@ function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+      <Dialog open={isExpenseModalOpen} onOpenChange={setIsExpenseModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Lançar Despesa / Gasto</DialogTitle>
+            <DialogDescription>
+              Registre saídas de caixa vinculadas a processos ou manutenção do escritório.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vincular Processo (Opcional)</label>
+              <Select onValueChange={(val) => setExpenseData({ ...expenseData, processoId: val })}
+                value={expenseData.processoId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um processo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {processes.map(p => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.numeroProcesso || "Sem Nº"} - {p.titulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Descrição</label>
+              <Input
+                placeholder="Ex: Custas Judiciais, Token, Correios..."
+                onChange={(e) => setExpenseData({ ...expenseData, titulo: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Valor (R$)</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                onChange={(e) => setExpenseData({ ...expenseData, valor: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExpenseModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateExpense} className="bg-slate-900 text-white">Salvar Gasto</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

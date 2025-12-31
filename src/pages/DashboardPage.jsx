@@ -101,7 +101,7 @@ function DashboardPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="p-4 md:p-8 space-y-8 bg-slate-50/50 min-h-[100dvh]">
       
       {/* 1. CABEÇALHO DE BOAS-VINDAS */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

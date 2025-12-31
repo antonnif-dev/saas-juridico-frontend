@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Search, Send, Plus, ArrowLeft, MoreVertical, User, Trash2 } from 'lucide-react';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,15 +98,11 @@ function MensagensPage() {
   // --- 4. Iniciar uma Nova Conversa ---
   const handleStartNewConversation = async (client) => {
     try {
-      // Tenta criar ou obter uma conversa existente com este cliente
-      // O backend deve verificar se já existe e retornar a antiga, ou criar nova
       const response = await apiClient.post('/mensagens/conversas', {
-        participantId: client.id
+        participantId: client.authUid || client.id
       });
 
       const conversation = response.data;
-
-      // Atualiza a lista de conversas se for uma nova
       if (!conversations.find(c => c.id === conversation.id)) {
         setConversations([conversation, ...conversations]);
       }
@@ -227,6 +224,10 @@ function MensagensPage() {
         `}
                     >
                       <Avatar>
+                        <AvatarImage
+                          src={conv.participant?.photoURL || conv.participant?.photoUrl}
+                          alt={conv.participant?.name}
+                        />
                         <AvatarFallback>{getInitials(conv.participant?.name)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 overflow-hidden">
@@ -271,6 +272,7 @@ function MensagensPage() {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <Avatar className="h-9 w-9">
+                  <AvatarImage src={selectedConversation.participant?.photoURL} alt={selectedConversation.participant?.name} />
                   <AvatarFallback>{getInitials(selectedConversation.participant?.name)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -368,9 +370,14 @@ function MensagensPage() {
                     onClick={() => handleStartNewConversation(client)}
                     className="w-full flex items-center gap-3 p-3 hover:bg-slate-100 rounded-lg transition-colors text-left"
                   >
-                    <div className="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-slate-500" />
-                    </div>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={client.photoURL} alt={client.name} />
+                      <AvatarFallback>
+                        <div className="bg-slate-200 w-full h-full flex items-center justify-center">
+                          <User className="h-5 w-5 text-slate-500" />
+                        </div>
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <p className="font-medium text-sm">{client.name}</p>
                       <p className="text-xs text-muted-foreground">{client.email}</p>
