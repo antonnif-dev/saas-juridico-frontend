@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { Bot, Sparkles, FileCheck, Star, Download, Archive, FileText } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -26,29 +27,6 @@ function RelatorioFinalPage() {
   const [clientData, setClientData] = useState(null);
   const [filteredCases, setFilteredCases] = useState([]);
   //const [decisionResult, setDecisionResult] = useState('');
-
-  useEffect(() => {
-    const fetchCases = async () => {
-      setLoading(true);
-      try {
-        const response = await apiClient.get('/processo');
-        // Filtra apenas processos ENCERRADOS
-        const closedCases = response.data.filter(c =>
-          ['Encerrado', 'Arquivado', 'Concluído'].includes(c.status)
-        );
-        setCases(closedCases);
-        setFilteredCases(closedCases);
-      } catch (error) { console.error(error); }
-      finally { setLoading(false); }
-    };
-    fetchCases();
-  }, []);
-
-  const handleRatingSubmit = (e) => {
-    e.preventDefault();
-    alert("Obrigado pela sua avaliação!");
-    setIsRatingOpen(false);
-  };
 
   const handleViewReport = async (processo) => {
     setIsReportModalOpen(true); // Abrir imediatamente para melhorar a UX
@@ -93,6 +71,49 @@ function RelatorioFinalPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownloadPDF = () => {
+    const element = document.getElementById('report-content-to-export');
+    if (!element) return;
+
+    const opt = {
+      margin: 10,
+      filename: `Relatorio_${currentReportProcess?.titulo}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        // Isso forçará a renderização a usar o que está na tela
+        logging: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  };
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      setLoading(true);
+      try {
+        const response = await apiClient.get('/processo');
+        // Filtra apenas processos ENCERRADOS
+        const closedCases = response.data.filter(c =>
+          ['Encerrado', 'Arquivado', 'Concluído'].includes(c.status)
+        );
+        setCases(closedCases);
+        setFilteredCases(closedCases);
+      } catch (error) { console.error(error); }
+      finally { setLoading(false); }
+    };
+    fetchCases();
+  }, []);
+
+  const handleRatingSubmit = (e) => {
+    e.preventDefault();
+    alert("Obrigado pela sua avaliação!");
+    setIsRatingOpen(false);
   };
 
   return (
@@ -210,23 +231,44 @@ function RelatorioFinalPage() {
 
       {/* --- MODAL DO RELATÓRIO FINAL --- */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-          <DialogHeader className="p-6 border-b">
+        {/* Aumentamos a largura e definimos uma altura máxima fixa de 90% da tela */}
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 border-b shrink-0"> {/* shrink-0 impede o header de sumir */}
             <DialogTitle className="text-2xl">Relatório Final de {currentReportProcess?.titulo || 'Processo'}</DialogTitle>
             <DialogDescription>
               Relatório consolidado e pronto para ser entregue ao cliente.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="p-6">
-            <ReportModalContent processo={currentReportProcess} cliente={clientData} />
+          {/* O segredo está aqui: flex-1 e overflow-y-auto nesta div */}
+          <div
+            className="flex-1 overflow-y-auto p-6 bg-white"
+            id="report-content-to-export"
+            style={{
+              color: 'var(--cor-texto-primario)',
+              backgroundColor: 'var(--cor-fundo-card)'
+            }}
+          >
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-full">...</div>
+            ) : (
+              <ReportModalContent processo={currentReportProcess} cliente={clientData} />
+            )}
           </div>
 
-          <DialogFooter className="p-4 border-t">
+          <DialogFooter className="p-4 border-t bg-slate-50 shrink-0">
             <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Fechar</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">Baixar PDF (Em breve)</Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleDownloadPDF}
+              disabled={loading}
+            >
+              <Download className="mr-2 h-4 w-4" /> Baixar PDF
+            </Button>
           </DialogFooter>
         </DialogContent>
+
+
       </Dialog>
 
     </div>
