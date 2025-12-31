@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 function PreAtendimentoPage() {
   const { userRole } = useAuth();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
 
@@ -28,6 +29,10 @@ function PreAtendimentoPage() {
   // Estados da Lista (Triagem)
   const [leads, setLeads] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
+
+  // estado para clientes existentes e busca
+  const [existingClients, setExistingClients] = useState([]);
+  const [isExistingClient, setIsExistingClient] = useState(false);
 
   // --- FORMULÁRIO: ESTADO INICIAL ---
   const initialFormState = {
@@ -104,6 +109,29 @@ function PreAtendimentoPage() {
   useEffect(() => {
     fetchLeads();
   }, [userRole]);
+
+  useEffect(() => {
+    if (isAdmin && isModalOpen) {
+      apiClient.get('/clients')
+        .then(res => {
+          setExistingClients(res.data);
+        })
+        .catch(err => {
+          console.error("Erro ao carregar clientes do backend:", err.response?.data || err.message);
+        });
+    }
+  }, [isModalOpen, isAdmin]);
+
+  useEffect(() => {
+    if (currentUser && userRole === 'cliente') {
+      setFormData(prev => ({
+        ...prev,
+        nome: currentUser.nome,
+        email: currentUser.email,
+        clientId: currentUser.uid // Vínculo direto
+      }));
+    }
+  }, [currentUser]);
 
   // --- 2. AÇÕES DA TRIAGEM ---
   const handleRecusar = async (id) => {
@@ -345,6 +373,35 @@ function PreAtendimentoPage() {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* 1. DADOS PESSOAIS */}
+          {isAdmin && (
+            <div className="bg-slate-100 p-3 rounded-md mb-4 flex items-center justify-between">
+              <label className="text-sm font-bold text-slate-700">Vincular a cliente já cadastrado?</label>
+              <Select onValueChange={(val) => {
+                const client = existingClients.find(c => c.id === val);
+                if (client) {
+                  setFormData(prev => ({
+                    ...prev,
+                    clientId: client.id,
+                    nome: client.name,
+                    email: client.email,
+                    cpfCnpj: client.cpfCnpj
+                  }));
+                  setIsExistingClient(true);
+                }
+              }}>
+                <SelectTrigger className="w-[250px] bg-white">
+                  <SelectValue placeholder="Selecione o cliente..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingClients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name || c.nome} ({c.cpfCnpj})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <section className="space-y-4">
             <h2 className="text-xl font-semibold border-b pb-2 text-primary">1. Dados Pessoais</h2>
 
