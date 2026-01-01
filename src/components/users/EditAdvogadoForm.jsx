@@ -109,7 +109,7 @@ function EditAdvogadoForm({ user, onEditComplete, onCancel }) {
         throw new Error("A senha deve ter no mínimo 6 caracteres.");
       }
 
-      await apiClient.put(`/users/advogado/${user.uid}`, payload);
+      await apiClient.put(`/users/advogados/${user.uid}`, payload);
 
       alert("Perfil atualizado com sucesso!");
       if (onEditComplete) onEditComplete(); 

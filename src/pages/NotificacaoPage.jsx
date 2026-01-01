@@ -18,30 +18,34 @@ function NotificacaoPage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Usamos blocos separados ou tratamento de erro no readStatus para não quebrar a página
         const [preatendimentos, processos, agenda] = await Promise.all([
           apiClient.get('/preatendimento'),
           apiClient.get('/processo'),
           apiClient.get('/agenda')
         ]);
 
-        // Tentamos buscar lidos, se falhar, assume array vazio e segue a vida
+        // Tenta buscar lidos, se falhar, assume array vazio
         let readIds = [];
         try {
           const res = await apiClient.get('/notifications/read-status');
           readIds = res.data || [];
         } catch (e) {
-          console.warn("Backend de 'lidos' não configurado ou offline. Exibindo todas.");
+          console.warn("Backend de 'lidos' offline. Exibindo todas.");
         }
 
         const newNotifications = [];
         const hoje = startOfDay(new Date());
-        const limiteAgenda = endOfDay(addDays(new Date(), 7)); // Horizonte de 7 dias
+        const limiteAgenda = endOfDay(addDays(new Date(), 7));
 
-        // 1. LEADS (Pendentes no banco)
-        preatendimentos.data.forEach(item => {
+        // 1. PRÉ-ATENDIMENTOS (Normalizado)
+        // Usa ?. para evitar erro se 'data' for undefined
+        preatendimentos.data?.forEach(item => {
           const id = `lead-${item.id}`;
-          if (item.status === 'Pendente' && !readIds.includes(id)) {
+          // Converte para minúsculo para garantir o match
+          const status = item.status ? item.status.toLowerCase() : '';
+
+          // Aceita 'pendente', 'novo', 'em análise' (ajuste conforme seu banco)
+          if (status === 'pendente' && !readIds.includes(id)) {
             newNotifications.push({
               id,
               type: 'lead',
@@ -52,17 +56,33 @@ function NotificacaoPage() {
               priority: 'medium'
             });
           }
+
+          // Lógica de Assinatura
+          if (status === 'em negociacao' && item.proposalStatus === 'accepted' && item.signature && !readIds.includes(`sign-${item.id}`)) {
+            newNotifications.push({
+              id: `sign-${item.id}`,
+              type: 'success',
+              title: 'Proposta Aceita!',
+              description: `${item.nome} assinou o contrato.`,
+              date: new Date(),
+              link: '/triagem',
+              priority: 'high'
+            });
+          }
         });
 
-        // 2. PROCESSOS URGENTES (Qualquer um que esteja no banco como Alta/Urgente)
-        processos.data.forEach(proc => {
+        // 2. PROCESSOS URGENTES (Normalizado)
+        processos.data?.forEach(proc => {
           const id = `proc-${proc.id}`;
-          if ((proc.urgencia === 'Alta' || proc.urgencia === 'Urgente') && !readIds.includes(id)) {
+          const urgencia = proc.urgencia ? proc.urgencia.toLowerCase() : '';
+
+          // Aceita 'alta' ou 'urgente' independente de maiúsculas
+          if ((urgencia === 'alta' || urgencia === 'urgente') && !readIds.includes(id)) {
             newNotifications.push({
               id,
               type: 'alert',
               title: `Urgência: ${proc.titulo}`,
-              description: `Atenção imediata requerida para o processo.`,
+              description: `Atenção imediata requerida.`,
               date: proc.createdAt?._seconds ? new Date(proc.createdAt._seconds * 1000) : new Date(),
               link: `/processos/${proc.id}`,
               priority: 'high'
@@ -71,13 +91,11 @@ function NotificacaoPage() {
         });
 
         // 3. AGENDA (Próximos 7 dias)
-        agenda.data.forEach(evt => {
+        agenda.data?.forEach(evt => {
           const id = `agenda-${evt.id}`;
           let eventDate = evt.dataHora?.seconds ? new Date(evt.dataHora.seconds * 1000) : new Date(evt.dataHora);
 
-          const estaNoIntervalo = isWithinInterval(eventDate, { start: hoje, end: limiteAgenda });
-
-          if (estaNoIntervalo && !readIds.includes(id)) {
+          if (isWithinInterval(eventDate, { start: hoje, end: limiteAgenda }) && !readIds.includes(id)) {
             newNotifications.push({
               id,
               type: 'agenda',
@@ -97,8 +115,9 @@ function NotificacaoPage() {
         });
 
         setNotifications(sorted);
+
       } catch (error) {
-        console.error("Erro crítico ao carregar notificações", error);
+        console.error("Erro ao carregar notificações", error);
       } finally {
         setLoading(false);
       }
@@ -179,7 +198,7 @@ function NotificacaoPage() {
                 <p className="text-center py-12 text-slate-500">Não há alertas de alta prioridade.</p>
               ) : (
                 notifications.filter(n => n.priority === 'high').map(item => (
-                   <Card key={item.id} className="border-l-4 border-l-red-500 bg-red-50/30 cursor-pointer" onClick={() => handleNotificationClick(item)}>
+                  <Card key={item.id} className="border-l-4 border-l-red-500 bg-red-50/30 cursor-pointer" onClick={() => handleNotificationClick(item)}>
                     <CardContent className="p-4 flex items-start gap-4">
                       <div className="p-2 bg-white rounded-full">{getIcon(item.type)}</div>
                       <div className="flex-1">

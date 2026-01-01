@@ -64,7 +64,7 @@ function EquipePage() {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Tem certeza que deseja remover este advogado da equipe? Esta ação não pode ser desfeita.")) {
       try {
-        await apiClient.delete(`/users/advogado/${userId}`);
+        await apiClient.delete(`/users/advogados/${userId}`);
         alert("Advogado removido com sucesso.");
         fetchUsers();
       } catch (err) {

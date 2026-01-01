@@ -13,8 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function PreAtendimentoPage() {
-  const { userRole } = useAuth();
-  const { currentUser } = useAuth();
+  const { userRole, currentUser } = useAuth();
   const navigate = useNavigate();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
 
@@ -847,11 +846,13 @@ function PreAtendimentoPage() {
 
         /* --- CENÁRIO 2: PÚBLICO (VÊ O FORMULÁRIO DIRETO NA TELA) --- */
         <Card className="border-slate-200 shadow-md">
-          <CardHeader>
-            <Button className="btn-primary" type="button" variant="secondary" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar ao Início
-            </Button>
-          </CardHeader>
+          {!currentUser && (
+            <CardHeader>
+              <Button className="btn-primary" type="button" variant="secondary" onClick={() => navigate('/')}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Voltar ao Início
+              </Button>
+            </CardHeader>
+          )}
           <CardContent className="text-center text-2xl">
             <CardTitle>Novo Pré-Atendimento</CardTitle>
             <CardDescription>Preencha os dados abaixo para iniciar.</CardDescription>

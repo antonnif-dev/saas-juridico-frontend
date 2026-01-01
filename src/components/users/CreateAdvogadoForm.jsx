@@ -80,7 +80,7 @@ function CreateAdvogadoForm({ onUserCreated }) {
     setError('');
     setIsLoading(true);
     try {
-      await apiClient.post('/users/advogado', formData);
+      await apiClient.post('/users/advogados', formData);
       alert('Advogado criado com sucesso!');
       if(onUserCreated) onUserCreated();
       

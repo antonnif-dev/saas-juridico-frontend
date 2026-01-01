@@ -20,11 +20,11 @@ function CaseDetailPage() {
   const [isTransferring, setIsTransferring] = useState(false);
   useEffect(() => {
     if (isAdmin) {
-      apiClient.get('/users/advogado') // Alinhado com a sua rota de listagem no backend
+      apiClient.get('/users/advogados') // Alinhado com a sua rota de listagem no backend
         .then(res => setAdvogados(res.data))
         .catch(err => console.error("Erro ao carregar advogados:", err));
     }
-  }, [isAdmin]);
+  }, [isAdmin, userRole]);
 
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [novaMovimentacao, setNovaMovimentacao] = useState('');
