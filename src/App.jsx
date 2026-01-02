@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -30,6 +30,7 @@ import AtendimentoPage from './pages/AtendimentoPage';
 import PosAtendimentoPage from './pages/PosAtendimentoPage';
 import NotificacaoPage from './pages/NotificacaoPage';
 import MensagensPage from './pages/MensagensPage';
+import ClientMessagesPage from './pages/ClientMessagesPage';
 import TransactionsPage from './pages/TransactionsPage';
 import ClientTriagemPage from './pages/client/ClientTriagemPage';
 import UserProfilePage from '@/pages/UserProfilePage';
@@ -39,6 +40,14 @@ import IaPosAtendimentoPage from './pages/IaPosAtendimentoPage';
 import RelatorioFinalPage from './pages/RelatorioFinalPage';
 import IaRelatorioPage from './pages/IaRelatorioPage';
 import EditAdvogadoPage from './pages/EditAdvogadoPage';
+
+// Páginas escritório
+import AreasAtuacaoPage from './pages/escritorio/AreasAtuacaoPage';
+import EquipeEscritorioPage from './pages/escritorio/EquipeEscritorioPage';
+import JurisprudenciaPage from './pages/escritorio/JurisprudenciaPage';
+import PrivacidadePage from './pages/escritorio/PrivacidadePage';
+import TermosPage from './pages/escritorio/TermosPage';
+import FaleConoscoPage from './pages/escritorio/FaleConoscoPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -76,7 +85,10 @@ function App() {
             <Route path="/processos" element={<CasesPage />} />
             <Route path="/processos/:id" element={<CaseDetailPage />} />
             <Route path="perfil" element={<UserProfilePage />} />
-            <Route path="/mensagens" element={<MensagensPage />} />
+            <Route
+              path="/mensagens"
+              element={!isStaff ? <ClientMessagesPage /> : <MensagensPage />}
+            />
             <Route path="/notificacoes" element={<NotificacaoPage />} />
             <Route path="/transacoes" element={<TransactionsPage />} />
             <Route path="/triagem" element={<PreAtendimentoPage />} />
@@ -115,6 +127,14 @@ function App() {
           <Route path="/portal/processos/:id" element={<ClientCaseDetailPage />} />
           <Route path="/portal/negociacao/:id" element={<ClientTriagemPage />} />
         </Route>
+
+        {/* PÁGINAS INSTITUCIONAIS DO ESCRITÓRIO */}
+        <Route path="/escritorio/atuacao" element={<AreasAtuacaoPage />} />
+        <Route path="/escritorio/equipe" element={<EquipeEscritorioPage />} />
+        <Route path="/escritorio/jurisprudencia" element={<JurisprudenciaPage />} />
+        <Route path="/escritorio/privacidade" element={<PrivacidadePage />} />
+        <Route path="/escritorio/termos" element={<TermosPage />} />
+        <Route path="/escritorio/contato" element={<FaleConoscoPage />} />
       </Routes>
     </>
   );

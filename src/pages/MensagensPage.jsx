@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/context-menu";
 
 function MensagensPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, userRole } = useAuth();
 
   // Estados de Dados
   const [conversations, setConversations] = useState([]);
@@ -84,7 +84,7 @@ function MensagensPage() {
     setIsNewChatOpen(true);
     setLoadingClients(true);
     try {
-      // Busca a lista de clientes para selecionar
+      const endpoint = userRole === 'cliente' ? '/users/advogados' : '/clients';
       const response = await apiClient.get('/clients');
       setClients(response.data);
     } catch (error) {
@@ -95,29 +95,13 @@ function MensagensPage() {
     }
   };
 
-  // --- 4. Iniciar uma Nova Conversa ---
-  const handleStartNewConversation = async (client) => {
-    try {
-      const response = await apiClient.post('/mensagens/conversas', {
-        participantId: client.authUid || client.id
-      });
-
-      const conversation = response.data;
-      if (!conversations.find(c => c.id === conversation.id)) {
-        setConversations([conversation, ...conversations]);
-      }
-
-      setIsNewChatOpen(false); // Fecha o modal
-      handleSelectConversation(conversation); // Abre o chat
-    } catch (error) {
-      console.error("Erro ao iniciar conversa:", error);
-      alert("Erro ao iniciar conversa.");
-    }
-  };
-
   // --- 5. Selecionar Conversa e Carregar Mensagens ---
   const handleSelectConversation = async (conversation) => {
     setSelectedConversation(conversation);
+    if (conversation.id === 'draft') {
+      setMessages([]);
+      return;
+    }
     setLoadingMessages(true);
     try {
       const response = await apiClient.get(`/mensagens/conversas/${conversation.id}/mensagens`);
@@ -139,6 +123,22 @@ function MensagensPage() {
     setNewMessage(""); // Limpa input imediatamente (UX)
 
     try {
+      let conversationId = selectedConversation.id;
+
+      // SE FOR RASCUNHO, CRIA A CONVERSA AGORA:
+      if (conversationId === 'draft') {
+        const createResponse = await apiClient.post('/mensagens/conversas', {
+          participantId: selectedConversation.participant.uid
+        });
+
+        const newConversation = createResponse.data;
+        conversationId = newConversation.id; // Atualiza o ID para usar na mensagem
+
+        // Atualiza estados locais
+        setConversations(prev => [newConversation, ...prev]);
+        setSelectedConversation(newConversation);
+      }
+
       const response = await apiClient.post(`/mensagens/conversas/${selectedConversation.id}/mensagens`, {
         content: msgContent
       });
@@ -157,6 +157,28 @@ function MensagensPage() {
       console.error("Erro ao enviar:", error);
       alert("Falha ao enviar mensagem.");
     }
+  };
+
+  const handleDraftConversation = (client) => {
+    const existingConv = conversations.find(c => c.participant?.uid === (client.authUid || client.id));
+
+    if (existingConv) {
+      handleSelectConversation(existingConv);
+    } else {
+      // 2. Cria objeto temporário (Rascunho)
+      const draftConversation = {
+        id: 'draft',
+        participant: {
+          uid: client.authUid || client.id,
+          name: client.name,
+          photoUrl: client.photoUrl || client.photoURL,
+          photoURL: client.photoUrl || client.photoURL
+        }
+      };
+      setSelectedConversation(draftConversation);
+      setMessages([]); // Limpa mensagens anteriores
+    }
+    setIsNewChatOpen(false); // Fecha modal
   };
 
   const getInitials = (name) => name ? name.substring(0, 2).toUpperCase() : '??';
@@ -225,7 +247,7 @@ function MensagensPage() {
                     >
                       <Avatar>
                         <AvatarImage
-                          src={conv.participant?.photoURL || conv.participant?.photoUrl}
+                          src={conv.participant?.photoUrl || conv.participant?.photoURL}
                           alt={conv.participant?.name}
                         />
                         <AvatarFallback>{getInitials(conv.participant?.name)}</AvatarFallback>
@@ -272,7 +294,10 @@ function MensagensPage() {
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={selectedConversation.participant?.photoURL} alt={selectedConversation.participant?.name} />
+                  <AvatarImage
+                    src={selectedConversation.participant?.photoUrl || selectedConversation.participant?.photoURL}
+                    alt={selectedConversation.participant?.name}
+                  />
                   <AvatarFallback>{getInitials(selectedConversation.participant?.name)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -355,7 +380,7 @@ function MensagensPage() {
           <DialogHeader className="p-4 border-b">
             <DialogTitle>Nova Conversa</DialogTitle>
             <DialogDescription>
-              Selecione um cliente abaixo para iniciar um atendimento.
+              Selecione um contato para iniciar o atendimento.
             </DialogDescription>
           </DialogHeader>
 
@@ -367,17 +392,26 @@ function MensagensPage() {
                 clients.map(client => (
                   <button
                     key={client.id}
-                    onClick={() => handleStartNewConversation(client)}
+                    //onClick={() => handleStartNewConversation(client)}
+                    onClick={() => handleDraftConversation(client)}
                     className="w-full flex items-center gap-3 p-3 hover:bg-slate-100 rounded-lg transition-colors text-left"
                   >
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={client.photoURL} alt={client.name} />
+                      <AvatarImage src={client.photoUrl || client.photoURL} alt={client.name} />
                       <AvatarFallback>
                         <div className="bg-slate-200 w-full h-full flex items-center justify-center">
                           <User className="h-5 w-5 text-slate-500" />
                         </div>
                       </AvatarFallback>
                     </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">{client.name}</p>
+                      <p className="text-xs text-muted-foreground">{client.email}</p>
+
+                      {/* ADICIONE ESTA LINHA DE TESTE: */}
+                      <pre className="text-[10px] text-red-500">{JSON.stringify(client, null, 2)}</pre>
+
+                    </div>
                     <div>
                       <p className="font-medium text-sm">{client.name}</p>
                       <p className="text-xs text-muted-foreground">{client.email}</p>

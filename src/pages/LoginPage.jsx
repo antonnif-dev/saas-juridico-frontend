@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/services/firebase';
 import { useAuth } from '@/context/AuthContext';
@@ -62,14 +62,25 @@ function LoginPage() {
           </div>
 
           {/* Nav + Botão */}
+          {/* Nav + Botão */}
           <div className="flex flex-col items-center gap-3">
             <nav className="flex gap-2 md:gap-16 text-sm font-medium text-slate-600">
-              <a href="#" className="hover:text-primary transition-colors">Áreas de Atuação</a>
-              <a href="#" className="hover:text-primary transition-colors">Nossa Equipe</a>
-              <a href="#" className="hover:text-primary transition-colors">Jurisprudência</a>
+              <Link to="/escritorio/atuacao" className="hover:text-primary transition-colors">
+                Áreas de Atuação
+              </Link>
+              <Link to="/escritorio/equipe" className="hover:text-primary transition-colors">
+                Nossa Equipe
+              </Link>
+              <Link to="/escritorio/jurisprudencia" className="hover:text-primary transition-colors">
+                Jurisprudência
+              </Link>
             </nav>
 
-            <Button variant="outline" className="ml-auto">
+            <Button
+              variant="outline"
+              className="ml-auto"
+              onClick={() => navigate('/escritorio/contato')}
+            >
               Fale Conosco
             </Button>
           </div>
@@ -95,7 +106,12 @@ function LoginPage() {
               Iniciar Pré-atendimento
             </Button>
 
-            <Button size="lg" variant="outline" className="text-white border-slate-700 hover:bg-slate-800 hover:text-white">
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-white border-slate-700 hover:bg-slate-800 hover:text-white"
+              onClick={() => navigate('/escritorio/atuacao')} // Ou /escritorio/equipe
+            >
               Conhecer o Escritório
             </Button>
           </div>
@@ -215,8 +231,12 @@ function LoginPage() {
             &copy; {new Date().getFullYear()} Todos os direitos reservados. OAB/UF 00.000.
           </p>
           <div className="flex gap-6 text-sm">
-            <a href="#" className="hover:text-white transition-colors">Privacidade</a>
-            <a href="#" className="hover:text-white transition-colors">Termos</a>
+            <Link to="/escritorio/privacidade" className="hover:text-white transition-colors">
+              Privacidade
+            </Link>
+            <Link to="/escritorio/termos" className="hover:text-white transition-colors">
+              Termos
+            </Link>
           </div>
         </div>
       </footer>
