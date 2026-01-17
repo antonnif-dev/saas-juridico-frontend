@@ -74,6 +74,31 @@ function EquipePage() {
     }
   };
 
+  const getInitials = (person) => {
+    const name =
+      person?.name ??
+      person?.nome ??
+      person?.displayName ??
+      person?.fullName ??
+      "";
+
+    if (typeof name === "string" && name.trim().length > 0) {
+      const parts = name.trim().split(/\s+/);
+      const first = parts[0]?.charAt(0) ?? "";
+      const last = parts.length > 1 ? (parts[parts.length - 1]?.charAt(0) ?? "") : "";
+      return (first + last).toUpperCase();
+    }
+
+    // fallback: usa email
+    const email = person?.email ?? "";
+    if (typeof email === "string" && email.length > 0) {
+      return email.charAt(0).toUpperCase();
+    }
+
+    // último fallback
+    return "?";
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
 
@@ -114,7 +139,7 @@ function EquipePage() {
             <Card key={user.uid} className="border-t-4 border-t-primary shadow-sm hover:shadow-md transition-all">
               <CardHeader className="flex flex-row items-center gap-4 pb-2">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-                  {user.name.charAt(0).toUpperCase()}
+                  {getInitials(user).toUpperCase()}
                 </div>
                 <div className="overflow-hidden">
                   <CardTitle className="text-lg truncate" title={user.name}>{user.name}</CardTitle>

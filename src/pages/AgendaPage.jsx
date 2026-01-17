@@ -67,7 +67,7 @@ function AgendaPage() {
         });
         setIsDialogOpen(true);
         // Limpa o state do location para não reabrir ao atualizar a página
-        window.history.replaceState({}, document.title); 
+        window.history.replaceState({}, document.title);
       }
     } catch (err) {
       console.error("Erro ao buscar dados:", err);
@@ -98,7 +98,7 @@ function AgendaPage() {
   const datasAudiencia = compromissos
     .filter(c => c.tipo === 'Audiência')
     .map(c => new Date(c.dataHora));
-    
+
   const datasPrazo = compromissos
     .filter(c => c.tipo === 'Prazo')
     .map(c => new Date(c.dataHora));
@@ -132,15 +132,15 @@ function AgendaPage() {
   const handleModalSubmit = async (e) => {
     e.preventDefault();
     const { id, titulo, dataHora, tipo, processoId } = selectedEvent;
-    
+
     // Tratamento para enviar null se for "unselected"
     const finalProcessoId = processoId === 'unselected' ? null : processoId;
 
-    const dataToSend = { 
-        titulo, 
-        dataHora: new Date(dataHora).toISOString(), 
-        tipo, 
-        processoId: finalProcessoId 
+    const dataToSend = {
+      titulo,
+      dataHora: new Date(dataHora).toISOString(),
+      tipo,
+      processoId: finalProcessoId
     };
 
     try {
@@ -157,13 +157,20 @@ function AgendaPage() {
   };
 
   const handleDelete = async (compromissoId) => {
-    if (window.confirm('Tem certeza que deseja excluir este compromisso?')) {
-      try {
-        await apiClient.delete(`/agenda/${compromissoId}`);
-        fetchData();
-      } catch (err) {
-        alert('Falha ao excluir o compromisso.');
-      }
+    if (!window.confirm('Tem certeza que deseja excluir este compromisso?')) return;
+
+    try {
+      await apiClient.delete(`/agenda/${encodeURIComponent(compromissoId)}`);
+
+      setIsDialogOpen(false);
+      setSelectedEvent(null);
+
+      setCompromissos(prev => prev.filter(c => c.id !== compromissoId));
+      setFilteredCompromissos(prev => prev.filter(c => c.id !== compromissoId));
+
+    } catch (err) {
+      console.error("Erro ao excluir compromisso:", err?.response?.data || err);
+      alert('Falha ao excluir o compromisso.');
     }
   };
 
@@ -279,7 +286,7 @@ function AgendaPage() {
                   onSelect={handleCreateClick}
                   className="w-full border rounded-md"
                   locale={ptBR}
-                  
+
                   // --- AQUI ESTÁ A LÓGICA DE CORES ---
                   modifiers={{
                     audiencia: datasAudiencia,

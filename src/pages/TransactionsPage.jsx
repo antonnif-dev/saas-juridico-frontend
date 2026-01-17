@@ -27,14 +27,15 @@ function TransactionsPage() {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
 
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions,] = useState([]);
   const [summary, setSummary] = useState({ totalPendente: 0, totalPago: 0, totalAtrasado: 0 });
   const [loading, setLoading] = useState(true);
-  const [allTransactions, setAllTransactions] = useState([]);
+  const [allTransactions, setAllTransactions,] = useState([]);
   const [displayTransactions, setDisplayTransactions] = useState([]);
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [periodMode, setPeriodMode] = useState("month");
 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseData, setExpenseData] = useState({
@@ -42,30 +43,54 @@ function TransactionsPage() {
     valor: "",
     tipo: "despesa",
     categoria: "custas",
-    status: "paid", // Despesas geralmente são registradas já pagas
+    status: "paid",
+    processoId: ""
+  });
+
+  const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
+  const [revenueData, setRevenueData] = useState({
+    titulo: "",
+    valor: "",
+    tipo: "receita",
+    categoria: "honorarios",
+    status: "pending",
     processoId: ""
   });
 
   const handleCreateExpense = async () => {
     try {
-      // 1. Localiza o processo completo na lista que você buscou no useEffect
-      const processoAlvo = processes.find(p => p.id === expenseData.processoId);
-
-      if (!expenseData.titulo || !expenseData.valor || !processoAlvo) {
-        alert("Por favor, selecione um processo e preencha todos os campos.");
+      if (!expenseData.titulo || !expenseData.valor) {
+        alert("Preencha descrição e valor.");
         return;
+      }
+
+      const isOfficeExpense = expenseData.categoria === "despesa_geral";
+
+      let processoAlvo = null;
+      if (!isOfficeExpense) {
+        processoAlvo = processes.find(p => p.id === expenseData.processoId);
+        if (!processoAlvo) {
+          alert("Selecione um processo para lançar custas/despesas do processo.");
+          return;
+        }
       }
 
       const payload = {
         titulo: expenseData.titulo,
         valor: parseFloat(expenseData.valor),
-        tipo: "despesa", // Garante o tipo correto para o cálculo
-        categoria: "custas",
-        status: "pending", // Ou "paid", conforme sua necessidade
-        processoId: processoAlvo.id,
-        clientId: processoAlvo.clientId, // ESSENCIAL para os cards atualizarem
-        clienteNome: processoAlvo.clienteNome || processoAlvo.cliente || "Escritório",
-        dataVencimento: new Date().toISOString()
+        tipo: "despesa",
+        categoria: expenseData.categoria,
+        status: expenseData.status || "paid",
+        dataVencimento: new Date().toISOString(),
+        ...(processoAlvo
+          ? {
+            processoId: processoAlvo.id,
+            clientId: processoAlvo.clientId,
+            clienteNome: processoAlvo.clienteNome || processoAlvo.cliente || "Cliente",
+          }
+          : {
+            clienteNome: "Escritório",
+          }),
       };
 
       await apiClient.post('/financial/transactions', payload);
@@ -74,12 +99,59 @@ function TransactionsPage() {
       setIsExpenseModalOpen(false);
 
       setExpenseData({
-        titulo: "", valor: "", tipo: "despesa", categoria: "custas", status: "paid", processoId: ""
+        titulo: "",
+        valor: "",
+        tipo: "despesa",
+        categoria: "custas",
+        status: "paid",
+        processoId: ""
       });
 
       loadFinancialData();
     } catch (error) {
       console.error("Erro ao lançar despesa:", error);
+      alert("Erro ao salvar. Verifique se todos os campos estão preenchidos.");
+    }
+  };
+
+  const handleCreateRevenue = async () => {
+    try {
+      const processoAlvo = processes.find(p => p.id === revenueData.processoId);
+
+      if (!revenueData.titulo || !revenueData.valor || !processoAlvo) {
+        alert("Selecione um processo e preencha descrição e valor.");
+        return;
+      }
+
+      const payload = {
+        titulo: revenueData.titulo,
+        valor: parseFloat(revenueData.valor),
+        tipo: "receita",
+        categoria: "honorarios",
+        status: "pending",
+        processoId: processoAlvo.id,
+        clientId: processoAlvo.clientId,
+        clienteNome: processoAlvo.clienteNome || processoAlvo.cliente || "Cliente",
+        dataVencimento: new Date().toISOString()
+      };
+
+      await apiClient.post('/financial/transactions', payload);
+
+      alert("Receita (honorários) lançada com sucesso!");
+      setIsRevenueModalOpen(false);
+
+      setRevenueData({
+        titulo: "",
+        valor: "",
+        tipo: "receita",
+        categoria: "honorarios",
+        status: "pending",
+        processoId: ""
+      });
+
+      loadFinancialData();
+    } catch (error) {
+      console.error("Erro ao lançar receita:", error);
       alert("Erro ao salvar. Verifique se todos os campos estão preenchidos.");
     }
   };
@@ -101,7 +173,6 @@ function TransactionsPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 2. Extraia a função de carregamento para fora do useEffect para que ela seja acessível
   const loadFinancialData = async () => {
     try {
       setLoading(true);
@@ -130,32 +201,47 @@ function TransactionsPage() {
     loadFinancialData();
   }, [isAdmin]);
 
-  // 4. Lógica ÚNICA de Filtragem (Status + Pesquisa)
   useEffect(() => {
     let filtered = [...allTransactions];
 
-    // Filtro de Mês e Ano
-    filtered = filtered.filter(txn => {
-      const data = new Date(txn.dataVencimento);
-      return data.getMonth() === selectedMonth && data.getFullYear() === selectedYear;
-    });
-
-    // Filtro por Status
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(t => t.status === filterStatus);
+    if (periodMode === "month") {
+      filtered = filtered.filter((txn) => {
+        const raw = txn.dataVencimento?._seconds
+          ? txn.dataVencimento._seconds * 1000
+          : txn.dataVencimento;
+        const d = new Date(raw);
+        return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+      });
     }
 
-    // Filtro por Pesquisa (Título ou Cliente)
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((t) => t.status === filterStatus);
+    }
+
     if (searchQuery) {
       const term = searchQuery.toLowerCase();
-      filtered = filtered.filter(t =>
+      filtered = filtered.filter((t) =>
         t.titulo?.toLowerCase().includes(term) ||
-        t.cliente?.toLowerCase().includes(term)
+        t.cliente?.toLowerCase().includes(term) ||
+        t.clienteNome?.toLowerCase().includes(term)
       );
     }
 
     setDisplayTransactions(filtered);
-  }, [allTransactions, filterStatus, searchQuery, selectedMonth, selectedYear]);
+
+    const sum = filtered.reduce(
+      (acc, t) => {
+        const v = Number(t.valor || 0);
+        if (t.status === "pending") acc.totalPendente += v;
+        else if (t.status === "paid") acc.totalPago += v;
+        else if (t.status === "overdue") acc.totalAtrasado += v;
+        return acc;
+      },
+      { totalPendente: 0, totalPago: 0, totalAtrasado: 0 }
+    );
+
+    setSummary(sum);
+  }, [allTransactions, filterStatus, searchQuery, selectedMonth, selectedYear, periodMode]);
 
   const formatMoney = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -197,12 +283,20 @@ function TransactionsPage() {
 
         {/* ADICIONE ESTE BLOCO AQUI */}
         {isAdmin && (
-          <Button
-            onClick={() => setIsExpenseModalOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            <PlusCircle className="w-4 h-4 mr-2" /> Lançar Despesa
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsExpenseModalOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" /> Lançar Despesa
+            </Button>
+            <Button
+              onClick={() => setIsRevenueModalOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" /> Lançar Receita
+            </Button>
+          </div>
         )}
       </div>
 
@@ -271,6 +365,53 @@ function TransactionsPage() {
       </div>
 
       <div className="flex gap-4 mb-6">
+        <Select value={periodMode} onValueChange={setPeriodMode}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Período" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="month">Filtrar por mês/ano</SelectItem>
+            <SelectItem value="all">Geral (tudo)</SelectItem>
+          </SelectContent>
+        </Select>
+        {periodMode === "month" && (
+          <div className="flex gap-4 mb-6 flex-wrap">
+            <Select value={periodMode} onValueChange={setPeriodMode}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">Filtrar por mês/ano</SelectItem>
+                <SelectItem value="all">Geral (tudo)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {periodMode === "month" && (
+              <>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="border rounded p-3 px-10 bg-white"
+                >
+                  {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map((mes, index) => (
+                      <option key={index} value={index}>{mes}</option>
+                    ))}
+                </select>
+
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="border rounded p-2 px-10 bg-white"
+                >
+                  {[2024, 2025, 2026].map((ano) => (
+                    <option key={ano} value={ano}>{ano}</option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+        )}
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -379,10 +520,102 @@ function TransactionsPage() {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+
+            {/* Tipo de despesa */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Vincular Processo (Opcional)</label>
-              <Select onValueChange={(val) => setExpenseData({ ...expenseData, processoId: val })}
-                value={expenseData.processoId}
+              <label className="text-sm font-medium">Tipo de despesa</label>
+              <Select
+                value={expenseData.categoria}
+                onValueChange={(val) =>
+                  setExpenseData(prev => ({
+                    ...prev,
+                    categoria: val,
+                    processoId: val === "despesa_geral" ? "" : prev.processoId
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custas">Despesa do processo (custas)</SelectItem>
+                  <SelectItem value="despesa_geral">Despesa do escritório</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 👇 AQUI entra o trecho que você perguntou */}
+            {expenseData.categoria === "custas" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Vincular Processo</label>
+                <Select
+                  onValueChange={(val) =>
+                    setExpenseData({ ...expenseData, processoId: val })
+                  }
+                  value={expenseData.processoId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um processo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {processes.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.numeroProcesso || "Sem Nº"} - {p.titulo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Descrição */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Descrição</label>
+              <Input
+                placeholder="Ex: Custa judicial, cópia de documentos..."
+                value={expenseData.titulo}
+                onChange={(e) =>
+                  setExpenseData({ ...expenseData, titulo: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Valor */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Valor (R$)</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={expenseData.valor}
+                onChange={(e) =>
+                  setExpenseData({ ...expenseData, valor: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExpenseModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateExpense} className="bg-slate-900 text-white">Salvar Gasto</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRevenueModalOpen} onOpenChange={setIsRevenueModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Lançar Receita (Honorários)</DialogTitle>
+            <DialogDescription>
+              Registre entradas vinculadas a um processo (honorários).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Processo</label>
+              <Select
+                onValueChange={(val) => setRevenueData({ ...revenueData, processoId: val })}
+                value={revenueData.processoId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um processo..." />
@@ -400,8 +633,9 @@ function TransactionsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Descrição</label>
               <Input
-                placeholder="Ex: Custas Judiciais, Token, Correios..."
-                onChange={(e) => setExpenseData({ ...expenseData, titulo: e.target.value })}
+                placeholder="Ex: Honorários iniciais, Honorários de êxito..."
+                value={revenueData.titulo}
+                onChange={(e) => setRevenueData({ ...revenueData, titulo: e.target.value })}
               />
             </div>
 
@@ -410,14 +644,15 @@ function TransactionsPage() {
               <Input
                 type="number"
                 placeholder="0.00"
-                onChange={(e) => setExpenseData({ ...expenseData, valor: e.target.value })}
+                value={revenueData.valor}
+                onChange={(e) => setRevenueData({ ...revenueData, valor: e.target.value })}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsExpenseModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreateExpense} className="bg-slate-900 text-white">Salvar Gasto</Button>
+            <Button variant="outline" onClick={() => setIsRevenueModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateRevenue} className="bg-slate-900 text-white">Salvar Receita</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

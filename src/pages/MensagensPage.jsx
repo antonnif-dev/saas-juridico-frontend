@@ -406,12 +406,10 @@ function MensagensPage() {
                     </Avatar>
                     <div>
                       <p className="font-medium text-sm">{client.name}</p>
+                      <p className="text-xs text-muted-foreground">{client.cpf || client.cpfCnpj || "CPF não informado"}</p>
                       <p className="text-xs text-muted-foreground">{client.email}</p>
-
-                      {/* ADICIONE ESTA LINHA DE TESTE: */}
-                      <pre className="text-[10px] text-red-500">{JSON.stringify(client, null, 2)}</pre>
-
                     </div>
+
                     <div>
                       <p className="font-medium text-sm">{client.name}</p>
                       <p className="text-xs text-muted-foreground">{client.email}</p>

@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 function CaseDetailPage() {
   const { id: processoId } = useParams();
   const navigate = useNavigate();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, userRole } = useAuth();
 
   const [caseDetail, setCaseDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,6 +18,34 @@ function CaseDetailPage() {
   const [previewFile, setPreviewFile] = useState(null);
   const [advogados, setAdvogados] = useState([]);
   const [isTransferring, setIsTransferring] = useState(false);
+  const [activeTab, setActiveTab] = useState("movimentacoes"); // "movimentacoes" | "documentos" | "financeiro"
+  const [loadingFinanceiro, setLoadingFinanceiro] = useState(false);
+
+  const formatBRL = (value) => {
+    const n = Number(value);
+    if (Number.isNaN(n)) return "N/D";
+    return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
+  const fetchFinanceiro = useCallback(async () => {
+    setLoadingFinanceiro(true);
+    try {
+      const res = await apiClient.get(`/financial/transactions/process/${processoId}`);
+      setTransacoes(res.data || []);
+    } catch (e) {
+      console.error("Erro ao buscar financeiro:", e);
+      setTransacoes([]);
+    } finally {
+      setLoadingFinanceiro(false);
+    }
+  }, [processoId]);
+
+  useEffect(() => {
+    if (activeTab === "financeiro") {
+      fetchFinanceiro();
+    }
+  }, [activeTab, fetchFinanceiro]);
+
   useEffect(() => {
     if (isAdmin) {
       apiClient.get('/users/advogados') // Alinhado com a sua rota de listagem no backend
@@ -32,17 +60,45 @@ function CaseDetailPage() {
   const [editingMovId, setEditingMovId] = useState(null);
   const [editingText, setEditingText] = useState('');
 
+  const [showHistoricoModal, setShowHistoricoModal] = useState(false);
+  const [mensagens, setMensagens] = useState([]);
+  const [transacoes, setTransacoes] = useState([]);
+
+  const honorarios = transacoes.filter(t => t.categoria === "honorarios");
+  const custas = transacoes.filter(t => t.categoria === "custas");
+  const pagamentos = transacoes.filter(t => t.categoria === "pagamento");
+
+  const toDateSafe = (value) => {
+    // Firestore Timestamp (Admin) costuma vir como { _seconds: number }
+    if (value && typeof value === "object" && typeof value._seconds === "number") {
+      return new Date(value._seconds * 1000);
+    }
+    // Timestamp (client) às vezes vem como { seconds: number }
+    if (value && typeof value === "object" && typeof value.seconds === "number") {
+      return new Date(value.seconds * 1000);
+    }
+    // ISO string ou Date
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatDateTimeBR = (d) => {
+    if (!d) return "N/D";
+    return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "medium" });
+  };
+
   const fetchData = useCallback(async () => {
     try {
-      const [caseResponse, movimentacoesResponse] = await Promise.all([
+      const [caseResponse, movimentacoesResponse, mensagensResponse] = await Promise.all([
         apiClient.get(`/processo/${processoId}`),
-        apiClient.get(`/processo/${processoId}/movimentacoes`)
+        apiClient.get(`/processo/${processoId}/movimentacoes`),
+
+        apiClient.get(`/messages/processo/${processoId}`).catch(() => ({ data: [] })),
       ]);
 
       setCaseDetail(caseResponse.data);
       setMovimentacoes(movimentacoesResponse.data);
-
-      setFormData(caseResponse.data);
+      setMensagens(mensagensResponse?.data || []);
 
       if (caseResponse.data.clientId) {
         const clientResponse = await apiClient.get(`/clients/${caseResponse.data.clientId}`);
@@ -206,6 +262,34 @@ function CaseDetailPage() {
 
   const podeEditar = isAdmin || caseDetail?.responsavelUid === currentUser?.uid;
 
+  const eventosHistorico = [
+    // Criação do processo (se existir createdAt no caseDetail)
+    {
+      tipo: "processo",
+      titulo: "Processo criado",
+      data: toDateSafe(caseDetail?.createdAt || caseDetail?.dataCriacao),
+      detalhes: {
+        criadoPor: caseDetail?.criadoPorNome || caseDetail?.criadoPorEmail || caseDetail?.criadoPorUid || "N/D",
+        responsavelUid: caseDetail?.responsavelUid || "N/D",
+        status: caseDetail?.status || "N/D",
+      },
+    },
+
+
+    ...(movimentacoes || []).map((m) => ({
+      tipo: "movimentacao",
+      titulo: "Movimentação",
+      data: toDateSafe(m?.data),
+      detalhes: { descricao: m?.descricao || "" },
+    })),
+  ]
+    .filter((e) => e.data || e.tipo) // mantém, mas você pode filtrar só os com data se quiser
+    .sort((a, b) => {
+      const da = a.data ? a.data.getTime() : 0;
+      const db = b.data ? b.data.getTime() : 0;
+      return db - da; // mais recente primeiro
+    });
+
   return (
     <div style={{ padding: '20px' }}>
       {isEditing ? (
@@ -270,91 +354,243 @@ function CaseDetailPage() {
         </div>
       )}
 
-      <hr style={{ margin: '30px 0' }} />
+      <div style={{ display: "flex", justifyContent: 'center', gap: "8px", marginTop: "20px", flexWrap: "wrap" }}>
+        <button
+          onClick={() => setActiveTab("movimentacoes")}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid #d1d5db",
+            background: activeTab === "movimentacoes" ? "#111827" : "white",
+            color: activeTab === "movimentacoes" ? "white" : "#111827",
+          }}
+        >
+          Movimentações
+        </button>
 
-      <div className='w-full'>
-        <h3>Linha do Tempo / Movimentações</h3>
-        {podeEditar ? (
-          <form onSubmit={handleAddMovimentacao} style={{ marginBottom: '20px' }}>
-            <textarea
-              value={novaMovimentacao}
-              onChange={(e) => setNovaMovimentacao(e.target.value)}
-              placeholder="Registre uma nova movimentação..."
-              style={{ width: '100%', minHeight: '80px', marginBottom: '10px' }}
-              className='textarea-base'
-              required
-            />
-            <button type="submit">Registrar Movimentação</button>
-          </form>
-        ) : (
-          <p className="text-slate-500 italic">Apenas o advogado responsável pode registrar movimentações.</p>
-        )}
+        <button
+          onClick={() => setActiveTab("documentos")}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid #d1d5db",
+            background: activeTab === "documentos" ? "#111827" : "white",
+            color: activeTab === "documentos" ? "white" : "#111827",
+          }}
+        >
+          Documentos
+        </button>
 
-        {movimentacoes.length > 0 ? (
-          movimentacoes.map(mov => (
-            <div key={mov.id} style={{ borderLeft: '3px solid #007bff', padding: '10px 20px', marginBottom: '15px', backgroundColor: '#f8f9fa' }}>
-              <p style={{ fontWeight: 'bold', margin: 0 }}>{new Date(mov.data._seconds * 1000).toLocaleString('pt-BR')}</p>
+        <button
+          onClick={() => setActiveTab("financeiro")}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid #d1d5db",
+            background: activeTab === "financeiro" ? "#111827" : "white",
+            color: activeTab === "financeiro" ? "white" : "#111827",
+          }}
+        >
+          Financeiro
+        </button>
+      </div>
+      {activeTab === "movimentacoes" && (
+        <>
+          <hr style={{ margin: '30px 0' }} />
+          <div className='w-full'>
+            <h3>Linha do Tempo / Movimentações</h3>
+            {podeEditar ? (
+              <form onSubmit={handleAddMovimentacao} style={{ marginBottom: '20px' }}>
+                <textarea
+                  value={novaMovimentacao}
+                  onChange={(e) => setNovaMovimentacao(e.target.value)}
+                  placeholder="Registre uma nova movimentação..."
+                  style={{ width: '100%', minHeight: '80px', marginBottom: '10px' }}
+                  className='textarea-base'
+                  required
+                />
+                <button type="submit">Registrar Movimentação</button>
+              </form>
+            ) : (
+              <p className="text-slate-500 italic">Apenas o advogado responsável pode registrar movimentações.</p>
+            )}
 
-              {editingMovId === mov.id ? (
-                <div>
-                  <textarea
-                    value={editingText}
-                    onChange={(e) => setEditingText(e.target.value)}
-                    style={{ width: '100%', minHeight: '60px', marginTop: '5px' }}
-                    className='textarea-base'
-                  />
-                  <button onClick={() => handleUpdateMovimentacao(mov.id)} style={{ marginTop: '5px' }}>Salvar</button>
-                  <button onClick={handleCancelEdit} style={{ marginLeft: '5px', marginTop: '5px' }}>Cancelar</button>
-                </div>
-              ) : (
-                <div>
-                  <p style={{ margin: 0 }}>{mov.descricao}</p>
-                  {podeEditar && (
-                    <div style={{ marginTop: '10px' }}>
-                      <button onClick={() => handleEditClick(mov)} style={{ fontSize: '0.8em', padding: '2px 5px' }}>Editar</button>
-                      <button onClick={() => handleDeleteMovimentacao(mov.id)} style={{ marginLeft: '5px', fontSize: '0.8em', padding: '2px 5px' }}>Excluir</button>
+            {movimentacoes.length > 0 ? (
+              movimentacoes.map(mov => (
+                <div key={mov.id} style={{ borderLeft: '3px solid #007bff', padding: '10px 20px', marginBottom: '15px', backgroundColor: '#f8f9fa' }}>
+                  <p style={{ fontWeight: 'bold', margin: 0 }}>{new Date(mov.data._seconds * 1000).toLocaleString('pt-BR')}</p>
+
+                  {editingMovId === mov.id ? (
+                    <div>
+                      <textarea
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        style={{ width: '100%', minHeight: '60px', marginTop: '5px' }}
+                        className='textarea-base'
+                      />
+                      <button onClick={() => handleUpdateMovimentacao(mov.id)} style={{ marginTop: '5px' }}>Salvar</button>
+                      <button onClick={handleCancelEdit} style={{ marginLeft: '5px', marginTop: '5px' }}>Cancelar</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ margin: 0 }}>{mov.descricao}</p>
+                      {podeEditar && (
+                        <div style={{ marginTop: '10px' }}>
+                          <button onClick={() => handleEditClick(mov)} style={{ fontSize: '0.8em', padding: '2px 5px' }}>Editar</button>
+                          <button onClick={() => handleDeleteMovimentacao(mov.id)} style={{ marginLeft: '5px', fontSize: '0.8em', padding: '2px 5px' }}>Excluir</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+              ))
+            ) : (
+              <p>Nenhuma movimentação registrada.</p>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === "documentos" && (
+        <>
+          <hr style={{ margin: '30px 0' }} />
+          <div>
+            <h3>Documentos</h3>
+            <ul>
+              {caseDetail.documentos && caseDetail.documentos.length > 0 ? (
+                caseDetail.documentos.map((doc, index) => (
+                  <li key={doc.id || index} style={{ marginBottom: "8px" }}>
+                    <a
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); handlePreviewClick(doc); }}
+                      style={{ display: "inline-block" }}
+                    >
+                      {doc.nome}
+                    </a>
+
+                    <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                      {formatDateTimeBR(
+                        toDateSafe(
+                          doc?.createdAt || doc?.uploadedAt || doc?.data || doc?.timestamp
+                        )
+                      )}
+                    </div>
+                  </li>
+                ))
+              ) : (
+                <li>Nenhum documento anexado.</li>
+              )}
+            </ul>
+            <div>
+              <h4>Adicionar Novo Documento</h4>
+              {podeEditar ? (
+                <>
+                  <input id="file-input" type="file" onChange={handleFileChange} className='input-base' />
+                  <button onClick={handleFileUpload} disabled={!selectedFile || isUploading}>
+                    {isUploading ? 'Enviando...' : 'Enviar Documento'}
+                  </button>
+                </>
+              ) : (
+                <p className="text-xs text-slate-400">Upload restrito ao responsável pelo caso.</p>
               )}
             </div>
-          ))
-        ) : (
-          <p>Nenhuma movimentação registrada.</p>
-        )}
-      </div>
+          </div>
+        </>
+      )}
 
-      <hr style={{ margin: '30px 0' }} />
+      {activeTab === "financeiro" && (
+        <>
+          <hr style={{ margin: "30px 0" }} />
 
-      <div>
-        <h3>Documentos</h3>
-        <ul>
-          {caseDetail.documentos && caseDetail.documentos.length > 0 ? (
-            caseDetail.documentos.map((doc, index) => (
-              <li key={doc.id || index}>
-                <a href="#" onClick={(e) => { e.preventDefault(); handlePreviewClick(doc); }}>
-                  {doc.nome}
-                </a>
-              </li>
-            ))
-          ) : (
-            <li>Nenhum documento anexado.</li>
-          )}
-        </ul>
-        <div>
-          <h4>Adicionar Novo Documento</h4>
-          {podeEditar ? (
-            <>
-              <input id="file-input" type="file" onChange={handleFileChange} className='input-base' />
-              <button onClick={handleFileUpload} disabled={!selectedFile || isUploading}>
-                {isUploading ? 'Enviando...' : 'Enviar Documento'}
-              </button>
-            </>
-          ) : (
-            <p className="text-xs text-slate-400">Upload restrito ao responsável pelo caso.</p>
-          )}
-        </div>
-      </div>
+          <div>
+            <h3>Financeiro do Processo</h3>
+
+            {loadingFinanceiro && <p>Carregando financeiro...</p>}
+
+            {!loadingFinanceiro && (
+              <div style={{ display: "grid", gap: "12px" }}>
+                {/* Valor acordado vem do processo */}
+                <div style={{ border: "1px solid #e5e7eb", borderRadius: "10px", padding: "12px" }}>
+                  <h4 style={{ marginTop: 0 }}>Valor acordado</h4>
+                  <p style={{ fontSize: "18px", margin: 0 }}>
+                    <strong>{formatBRL(caseDetail?.valorAcordado)}</strong>
+                  </p>
+                </div>
+
+                {/* Honorários */}
+                <div style={{ border: "1px solid #e5e7eb", borderRadius: "10px", padding: "12px" }}>
+                  <h4 style={{ marginTop: 0 }}>Honorários</h4>
+                  {honorarios.length === 0 ? (
+                    <p>Nenhum honorário registrado.</p>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                      {honorarios.map((h, idx) => (
+                        <li key={h.id || idx} style={{ marginBottom: "10px" }}>
+                          <div>
+                            <strong>{formatBRL(h.valor ?? h.amount)}</strong>
+                            {" — "}
+                            {h.titulo || h.descricao || "Sem descrição"}
+                            {h.status ? ` (${h.status})` : ""}
+                          </div>
+
+                          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                            {formatDateTimeBR(toDateSafe(h?.createdAt || h?.data || h?.timestamp))}
+                          </div>
+                        </li>
+
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Custas / Despesas */}
+                <div style={{ border: "1px solid #e5e7eb", borderRadius: "10px", padding: "12px" }}>
+                  <h4 style={{ marginTop: 0 }}>Custos / Despesas</h4>
+                  {custas.length === 0 ? (
+                    <p>Nenhuma despesa registrada.</p>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                      {custas.map((d, idx) => (
+                        <li key={d.id || idx} style={{ marginBottom: "6px" }}>
+                          <strong>{formatBRL(d.valor ?? d.amount)}</strong>
+                          {" — "}
+                          {d.titulo || d.descricao || "Sem descrição"}
+                          {d.status ? ` (${d.status})` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* Pagamentos */}
+                <div style={{ border: "1px solid #e5e7eb", borderRadius: "10px", padding: "12px" }}>
+                  <h4 style={{ marginTop: 0 }}>Pagamentos</h4>
+                  {pagamentos.length === 0 ? (
+                    <p>Nenhum pagamento registrado.</p>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                      {pagamentos.map((p, idx) => (
+                        <li key={d.id || idx} style={{ marginBottom: "10px" }}>
+                          <div>
+                            <strong>{formatBRL(d.valor ?? d.amount)}</strong>
+                            {" — "}
+                            {d.titulo || d.descricao || "Sem descrição"}
+                            {d.status ? ` (${d.status})` : ""}
+                          </div>
+
+                          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                            {formatDateTimeBR(toDateSafe(d?.createdAt || d?.data || d?.timestamp))}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {previewFile && (
         <div
@@ -383,6 +619,91 @@ function CaseDetailPage() {
             <button onClick={() => setPreviewFile(null)} style={{ marginTop: '10px' }}>
               Fechar
             </button>
+          </div>
+        </div>
+      )}
+
+      <hr style={{ margin: "30px 0" }} />
+
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          onClick={() => setShowHistoricoModal(true)}
+          style={{ background: "#111827", color: "white", padding: "10px 14px", borderRadius: "8px" }}
+        >
+          Ver histórico completo do processo
+        </button>
+      </div>
+
+      {showHistoricoModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.65)",
+            zIndex: 2000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+          onClick={() => setShowHistoricoModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              width: "min(960px, 100%)",
+              maxHeight: "85vh",
+              borderRadius: "12px",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: "16px", borderBottom: "1px solid #e5e7eb" }}>
+              <h2 style={{ margin: 0 }}>Histórico completo do processo</h2>
+              <p style={{ margin: "6px 0 0", color: "#6b7280", fontSize: "14px" }}>
+                {caseDetail?.titulo} • Nº {caseDetail?.numeroProcesso || "N/D"}
+              </p>
+            </div>
+
+            <div style={{ padding: "16px", overflowY: "auto" }}>
+              <div
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "10px",
+                  padding: "12px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                  <strong>Processo criado</strong>
+                  <span style={{ color: "#6b7280", fontSize: "13px", whiteSpace: "nowrap" }}>
+                    {formatDateTimeBR(toDateSafe(caseDetail?.createdAt || caseDetail?.dataCriacao))}
+                  </span>
+                </div>
+                {/* Dados do modal de histórido do processo */}
+                <div style={{ marginTop: "8px", fontSize: "14px" }}>
+                  <div>
+                    <strong>Criado por:</strong>{" "}
+                    {caseDetail?.criadoPorNome || caseDetail?.criadoPorEmail || caseDetail?.criadoPorUid || "N/D"}
+                  </div>
+                  <div><strong>Responsável (UID):</strong> {caseDetail?.responsavelUid || "N/D"}</div>
+                  <div><strong>Status:</strong> {caseDetail?.status || "N/D"}</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "12px 16px",
+                borderTop: "1px solid #e5e7eb",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <button onClick={() => setShowHistoricoModal(false)}>Fechar</button>
+            </div>
           </div>
         </div>
       )}
