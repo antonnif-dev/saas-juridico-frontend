@@ -3,6 +3,7 @@ import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles, ArrowLeft } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 // Componentes Shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -681,9 +682,8 @@ function PreAtendimentoPage() {
                   Utilize nossa IA para analisar os pré-atendimentos pendentes. Ela fornecerá um resumo estruturado, sugestão de documentos e uma triagem preliminar para agilizar seu trabalho.
                 </p>
               </div>
-
               <Button
-                onClick={() => window.location.href = '/ia-triagem'} // Ou use navigate se tiver o hook
+                onClick={() => navigate("/ia-triagem")}
                 className="bg-blue-600 hover:bg-blue-700 text-white shadow-md whitespace-nowrap"
               >
                 <Sparkles className="mr-2 h-4 w-4" /> Acessar Assistente IA

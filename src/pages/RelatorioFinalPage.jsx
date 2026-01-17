@@ -3,6 +3,7 @@ import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { Bot, Sparkles, FileCheck, Star, Download, Archive, FileText } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import { useNavigate } from "react-router-dom";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,9 @@ import ReportModalContent from '@/components/reports/ReportModalContent';
 function RelatorioFinalPage() {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
+  const navigate = useNavigate();
 
-  const [cases, setCases] = useState([]);
+  const [processo, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Estado para Avaliação (NPS)
@@ -136,7 +138,7 @@ function RelatorioFinalPage() {
               <p className="text-sm text-green-700">Gere relatórios finais, pesquisas de NPS e ofertas preventivas.</p>
             </div>
           </div>
-          <Button onClick={() => window.location.href = '/ia-relatorio'} className="bg-green-600 hover:bg-green-700 text-white shadow-md">
+          <Button onClick={() => navigate(`/ia-relatorio?caseId=${processo.id}`)} className="bg-green-600 hover:bg-green-700 text-white shadow-md">
             <Sparkles className="mr-2 h-4 w-4" /> Acessar IA Final
           </Button>
         </div>

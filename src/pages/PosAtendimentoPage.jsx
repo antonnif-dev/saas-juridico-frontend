@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { Bot, Sparkles, Search, Filter, Gavel, Clock, CheckCircle, AlertTriangle, FileText, DollarSign, ArrowUpRight, Archive } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 function PosAtendimentoPage() {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'administrador' || userRole === 'advogado';
+  const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
   const [filteredCases, setFilteredCases] = useState([]);
@@ -130,7 +132,12 @@ function PosAtendimentoPage() {
           </div>
           <p className="text-sm text-purple-700"> Monitore andamentos, gere resumos de sentenças para clientes e prepare roteiros de audiência automaticamente. </p>
         </div>
-        <Button onClick={() => window.location.href = '/ia-pos-atendimento'} className="bg-purple-600 hover:bg-purple-700 text-white shadow-md whitespace-nowrap" > <Sparkles className="mr-2 h-4 w-4" /> Acessar IA de Gestão </Button>
+        <Button
+          onClick={() => navigate("/ia-pos-atendimento")}
+          className="bg-purple-600 hover:bg-purple-700 text-white shadow-md whitespace-nowrap"
+        >
+          <Sparkles className="mr-2 h-4 w-4" /> Acessar IA de Gestão
+        </Button>
       </div>
       <Card className="border-l-4 border-l-red-500 shadow-sm">
         <CardHeader className="pb-2 pt-4">

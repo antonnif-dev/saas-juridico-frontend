@@ -256,7 +256,10 @@ function AtendimentoPage() {
                 <p className="text-sm text-blue-700">Use a IA para minutar petições e analisar documentos.</p>
               </div>
             </div>
-            <Button onClick={() => window.location.href = '/ia-atendimento'} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button
+              onClick={() => navigate("/ia-atendimento")}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
               <Sparkles className="mr-2 h-4 w-4" /> Acessar IA de Execução
             </Button>
           </div>
