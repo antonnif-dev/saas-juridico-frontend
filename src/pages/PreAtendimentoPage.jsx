@@ -3,7 +3,6 @@ import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles, ArrowLeft } from 'lucide-react';
-import { useNavigate } from "react-router-dom";
 
 // Componentes Shadcn/ui
 import { Button } from "@/components/ui/button";
