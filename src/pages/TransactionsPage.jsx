@@ -38,6 +38,11 @@ function TransactionsPage() {
   const [periodMode, setPeriodMode] = useState("month");
   const [honorariosTotal, setHonorariosTotal] = useState(0);
 
+  const [isReciboModalOpen, setIsReciboModalOpen] = useState(false);
+  const [reciboTxn, setReciboTxn] = useState(null);
+  const [reciboFile, setReciboFile] = useState(null);
+  const [isUploadingRecibo, setIsUploadingRecibo] = useState(false);
+
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseData, setExpenseData] = useState({
     titulo: "",
@@ -298,6 +303,41 @@ function TransactionsPage() {
     }
   };
 
+  const openReciboModal = (txn) => {
+    setReciboTxn(txn);
+    setReciboFile(null);
+    setIsReciboModalOpen(true);
+  };
+
+  const handleUploadRecibo = async () => {
+    if (!reciboTxn?.id) return;
+    if (!reciboFile) {
+      alert("Selecione um arquivo (imagem ou PDF).");
+      return;
+    }
+
+    setIsUploadingRecibo(true);
+    try {
+      const fd = new FormData();
+      fd.append("recibo", reciboFile);
+
+      await apiClient.post(`/financial/transactions/${reciboTxn.id}/recibo`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      alert("Recibo enviado com sucesso!");
+      setIsReciboModalOpen(false);
+      setReciboTxn(null);
+      setReciboFile(null);
+      loadFinancialData();
+    } catch (e) {
+      console.error("Erro ao enviar recibo:", e);
+      alert("Falha ao enviar recibo.");
+    } finally {
+      setIsUploadingRecibo(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex justify-between items-center">
@@ -504,11 +544,32 @@ function TransactionsPage() {
                         </div>
                       )}
 
-                      {/* EXIBIÇÃO PARA AMBOS: Quando já está pago */}
-                      {txn.status === 'paid' && (
-                        <Button size="sm" variant="ghost" className="text-xs text-blue-600">
-                          <Receipt className="w-3 h-3 mr-1" /> Ver Recibo
-                        </Button>
+                      {txn.status === "paid" && (
+                        <>
+                          {/* Cliente: só vê se existir */}
+                          {!isAdmin && txn.reciboUrl && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-blue-600"
+                              onClick={() => window.open(txn.reciboUrl, "_blank")}
+                            >
+                              <Receipt className="w-3 h-3 mr-1" /> Ver Recibo
+                            </Button>
+                          )}
+
+                          {/* Admin/Advogado: pode anexar ou ver */}
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-blue-600"
+                              onClick={() => openReciboModal(txn)}
+                            >
+                              <Receipt className="w-3 h-3 mr-1" /> {txn.reciboUrl ? "Ver / Trocar Recibo" : "Anexar Recibo"}
+                            </Button>
+                          )}
+                        </>
                       )}
                     </TableCell>
                   </TableRow>
@@ -690,6 +751,52 @@ function TransactionsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRevenueModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleCreateRevenue} className="bg-slate-900 text-white">Salvar Receita</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isReciboModalOpen} onOpenChange={setIsReciboModalOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Recibo</DialogTitle>
+            <DialogDescription>
+              {reciboTxn?.titulo} • {formatMoney(reciboTxn?.valor || 0)}
+            </DialogDescription>
+          </DialogHeader>
+
+          {reciboTxn?.reciboUrl ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Recibo atual:</p>
+              <Button variant="outline" onClick={() => window.open(reciboTxn.reciboUrl, "_blank")}>
+                Abrir recibo
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum recibo anexado ainda.</p>
+          )}
+
+          {isAdmin && (
+            <div className="space-y-2 pt-2">
+              <label className="text-sm font-medium">Enviar novo recibo (imagem ou PDF)</label>
+              <Input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={(e) => setReciboFile(e.target.files?.[0] || null)}
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReciboModalOpen(false)}>Fechar</Button>
+            {isAdmin && (
+              <Button
+                onClick={handleUploadRecibo}
+                disabled={!reciboFile || isUploadingRecibo}
+                className="bg-slate-900 text-white"
+              >
+                {isUploadingRecibo ? "Enviando..." : "Salvar Recibo"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
