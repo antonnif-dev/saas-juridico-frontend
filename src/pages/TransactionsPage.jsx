@@ -36,6 +36,7 @@ function TransactionsPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [periodMode, setPeriodMode] = useState("month");
+  const [honorariosTotal, setHonorariosTotal] = useState(0);
 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [expenseData, setExpenseData] = useState({
@@ -44,7 +45,8 @@ function TransactionsPage() {
     tipo: "despesa",
     categoria: "custas",
     status: "paid",
-    processoId: ""
+    processoId: "",
+    dataVencimento: ""
   });
 
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
@@ -54,7 +56,8 @@ function TransactionsPage() {
     tipo: "receita",
     categoria: "honorarios",
     status: "pending",
-    processoId: ""
+    processoId: "",
+    dataVencimento: ""
   });
 
   const handleCreateExpense = async () => {
@@ -81,7 +84,9 @@ function TransactionsPage() {
         tipo: "despesa",
         categoria: expenseData.categoria,
         status: expenseData.status || "paid",
-        dataVencimento: new Date().toISOString(),
+        dataVencimento: expenseData.dataVencimento
+          ? new Date(expenseData.dataVencimento).toISOString()
+          : new Date().toISOString(),
         ...(processoAlvo
           ? {
             processoId: processoAlvo.id,
@@ -104,7 +109,8 @@ function TransactionsPage() {
         tipo: "despesa",
         categoria: "custas",
         status: "paid",
-        processoId: ""
+        processoId: "",
+        dataVencimento: ""
       });
 
       loadFinancialData();
@@ -132,7 +138,9 @@ function TransactionsPage() {
         processoId: processoAlvo.id,
         clientId: processoAlvo.clientId,
         clienteNome: processoAlvo.clienteNome || processoAlvo.cliente || "Cliente",
-        dataVencimento: new Date().toISOString()
+        dataVencimento: revenueData.dataVencimento
+          ? new Date(revenueData.dataVencimento).toISOString()
+          : new Date().toISOString(),
       };
 
       await apiClient.post('/financial/transactions', payload);
@@ -146,7 +154,8 @@ function TransactionsPage() {
         tipo: "receita",
         categoria: "honorarios",
         status: "pending",
-        processoId: ""
+        processoId: "",
+        dataVencimento: ""
       });
 
       loadFinancialData();
@@ -187,7 +196,6 @@ function TransactionsPage() {
     }
   };
 
-  // 3. UseEffects Limpos
   useEffect(() => {
     if (isAdmin) {
       const fetchProcesses = async () => {
@@ -226,8 +234,17 @@ function TransactionsPage() {
         t.clienteNome?.toLowerCase().includes(term)
       );
     }
-
     setDisplayTransactions(filtered);
+
+    const totalHonorariosCalc = filtered.reduce((acc, t) => {
+      const v = Number(t.valor || 0);
+      const isHonorario = t.categoria === "honorarios";
+      const isReceita = !t.tipo || t.tipo === "receita";
+      if (isHonorario && isReceita) return acc + v;
+      return acc;
+    }, 0);
+
+    setHonorariosTotal(totalHonorariosCalc);
 
     const sum = filtered.reduce(
       (acc, t) => {
@@ -242,6 +259,16 @@ function TransactionsPage() {
 
     setSummary(sum);
   }, [allTransactions, filterStatus, searchQuery, selectedMonth, selectedYear, periodMode]);
+
+  const getClientName = (txn) => {
+    if (txn?.clienteNome) return txn.clienteNome;
+    if (txn?.cliente) return txn.cliente;
+    if (txn?.processoId) {
+      const p = processes.find(x => x.id === txn.processoId);
+      return p?.clienteNome || p?.cliente || "N/D";
+    }
+    return "N/D";
+  };
 
   const formatMoney = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -327,6 +354,17 @@ function TransactionsPage() {
             <p className="text-xs text-muted-foreground">Valores liquidados</p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="...">
+            <CardTitle className="...">Honorários</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-700">{formatMoney(honorariosTotal)}</div>
+            <p className="text-xs text-muted-foreground">
+              {periodMode === "all" ? "Total geral" : "Total do mês selecionado"}
+            </p>
+          </CardContent>
+        </Card>
         {isAdmin && (
           <Card>
             <CardHeader className="...">
@@ -343,7 +381,6 @@ function TransactionsPage() {
           </Card>
         )}
       </div>
-
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <Input
           placeholder="Pesquisar por título ou cliente..."
@@ -364,9 +401,9 @@ function TransactionsPage() {
         </Select>
       </div>
 
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-wrap gap-4 mb-6">
         <Select value={periodMode} onValueChange={setPeriodMode}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Período" />
           </SelectTrigger>
           <SelectContent>
@@ -374,64 +411,29 @@ function TransactionsPage() {
             <SelectItem value="all">Geral (tudo)</SelectItem>
           </SelectContent>
         </Select>
+
         {periodMode === "month" && (
-          <div className="flex gap-4 mb-6 flex-wrap">
-            <Select value={periodMode} onValueChange={setPeriodMode}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="month">Filtrar por mês/ano</SelectItem>
-                <SelectItem value="all">Geral (tudo)</SelectItem>
-              </SelectContent>
-            </Select>
+          <>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              className="w-60 sm:w-auto border rounded p-3 bg-white"
+            >
+              {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+                .map((mes, index) => <option key={index} value={index}>{mes}</option>)}
+            </select>
 
-            {periodMode === "month" && (
-              <>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="border rounded p-3 px-10 bg-white"
-                >
-                  {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-                    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map((mes, index) => (
-                      <option key={index} value={index}>{mes}</option>
-                    ))}
-                </select>
-
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="border rounded p-2 px-10 bg-white"
-                >
-                  {[2024, 2025, 2026].map((ano) => (
-                    <option key={ano} value={ano}>{ano}</option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="w-60 sm:w-auto border rounded p-3 bg-white"
+            >
+              {[2024, 2025, 2026].map((ano) => (
+                <option key={ano} value={ano}>{ano}</option>
+              ))}
+            </select>
+          </>
         )}
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-          className="border rounded p-3 px-10 bg-white"
-        >
-          {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map((mes, index) => (
-              <option key={index} value={index}>{mes}</option>
-            ))}
-        </select>
-
-        <select
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-          className="border rounded p-2 px-10 bg-white"
-        >
-          {[2024, 2025, 2026].map(ano => (
-            <option key={ano} value={ano}>{ano}</option>
-          ))}
-        </select>
       </div>
 
       {/* Tabela de Transações */}
@@ -460,9 +462,15 @@ function TransactionsPage() {
                       {txn.titulo}
                       <div className="text-xs text-muted-foreground md:hidden">{formatMoney(txn.valor)} • {txn.status}</div>
                     </TableCell>
-                    {isAdmin && <TableCell>{txn.cliente}</TableCell>}
+                    {isAdmin && <TableCell>{getClientName(txn)}</TableCell>}
                     <TableCell>
-                      {txn.vencimento && (format(new Date(txn.dataVencimento?._seconds * 1000 || txn.dataVencimento), 'dd/MM/yyyy', { locale: ptBR }))}
+                      {txn.dataVencimento && (
+                        format(
+                          new Date(txn.dataVencimento?._seconds * 1000 || txn.dataVencimento),
+                          'dd/MM/yyyy',
+                          { locale: ptBR }
+                        )
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell font-bold text-slate-700">
                       {formatMoney(txn.valor)}
@@ -592,6 +600,21 @@ function TransactionsPage() {
                 }
               />
             </div>
+
+            {/* Vencimento */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vencimento</label>
+              <Input
+                type="date"
+                value={expenseData.dataVencimento}
+                onChange={(e) =>
+                  setExpenseData({ ...expenseData, dataVencimento: e.target.value })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Se não escolher, será salvo com a data de hoje.
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -647,6 +670,20 @@ function TransactionsPage() {
                 value={revenueData.valor}
                 onChange={(e) => setRevenueData({ ...revenueData, valor: e.target.value })}
               />
+            </div>
+            {/* Vencimento */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vencimento</label>
+              <Input
+                type="date"
+                value={revenueData.dataVencimento}
+                onChange={(e) =>
+                  setRevenueData({ ...revenueData, dataVencimento: e.target.value })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Se não escolher, será salvo com a data de hoje.
+              </p>
             </div>
           </div>
 
