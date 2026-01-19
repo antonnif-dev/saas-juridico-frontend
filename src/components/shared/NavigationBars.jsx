@@ -29,7 +29,11 @@ const NavigationBars = () => {
   const rightGroup = [
     { to: "/notificacoes", icon: Bell, label: "Notificações" },
     { to: "/mensagens", icon: MessageSquare, label: "Mensagens" },
-    { to: "/transacoes", icon: CreditCard, label: "Pagamentos" },
+    {
+      to: isCliente ? "/portal/pagamentos" : "/transacoes",
+      icon: CreditCard,
+      label: "Pagamentos",
+    },
   ];
 
   const filteredLeft = leftGroup.filter(item => {
@@ -41,7 +45,7 @@ const NavigationBars = () => {
 
   // Componente Helper para renderizar um link
   const NavItem = ({ item, mobile }) => {
-    const isActive = location.pathname === item.to;
+    const isActive = location.pathname.startsWith(item.to);
     return (
       <Link
         to={item.to}
@@ -49,7 +53,7 @@ const NavigationBars = () => {
           "flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 group",
           isActive
             ? "text-primary bg-primary/10"
-            : "text-slate-500 hover:text-primary hover:bg-slate-100",
+            : "text-slate-500 hover:text-primary hover:bg-slate-100 hover:scale-[1.03] active:scale-[0.97]",
           mobile ? "w-14" : "w-full h-16 my-2"
         )}
       >

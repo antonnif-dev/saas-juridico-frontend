@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
       if (user) {
         setCurrentUser({
           ...user,
-          photoUrl: user.photoUrl
+          photoUrl: user.photoURL || user.photoUrl || null
         });
 
         try {

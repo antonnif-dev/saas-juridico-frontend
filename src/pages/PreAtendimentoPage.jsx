@@ -41,7 +41,7 @@ function PreAtendimentoPage() {
     categoria: '', resumoProblema: '', dataProblema: '', problemaContinuo: false,
     parteContrariaNome: '', tipoRelacao: '', documentos: [], objetivo: '', urgencia: 'Média',
     triagem: {}, informacaoExtra: '',
-    consentimentoLGPD: false, consentimientoWhatsapp: false, consentimientoCadastro: false
+    consentimentoLGPD: false, consentimentoWhatsapp: false, consentimentoCadastro: false
   };
   const [formData, setFormData] = useState(initialFormState);
   const handleCepBlur = async (e) => {
@@ -218,7 +218,7 @@ function PreAtendimentoPage() {
     try {
       await apiClient.post('/preatendimento', formData);
       setSuccessForm(true);
-      //if (isAdmin) fetchLeads(); // Deixar comentado: window.scrollTo(0, 0); fetchLeads();
+      if (isAdmin) fetchLeads(); // Deixar comentado: window.scrollTo(0, 0); fetchLeads();
       window.scrollTo(0, 0);
       fetchLeads();
     } catch (err) {
@@ -274,8 +274,11 @@ function PreAtendimentoPage() {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="col-span-full font-semibold text-slate-700">Detalhes do Consumidor</h4>
-            <input name="triagem.produtoServico" placeholder="Produto/Serviço Adquirido" className="input-base" onChange={handleChange} />
-            <input name="triagem.valorPago" placeholder="Valor Pago (R$)" type="number" className="input-base" onChange={handleChange} />
+            <input name="triagem.empresaReclamada" placeholder="Empresa reclamada" className="input-base" onChange={handleChange} />
+            <input name="triagem.produtoServico" placeholder="Produto/Serviço adquirido" className="input-base" onChange={handleChange} />
+            <input name="triagem.valorPago" placeholder="Valor pago (R$)" type="number" className="input-base" onChange={handleChange} />
+            <input name="triagem.dataCompra" type="date" title="Data da compra/contratação" className="input-base" onChange={handleChange} />
+            <input name="triagem.protocoloAtendimento" placeholder="Protocolo de atendimento (se houver)" className="input-base" onChange={handleChange} />
             <select name="triagem.tentativaSolucao" className="select-base" onChange={handleChange}>
               <option value="">Houve tentativa de solução?</option>
               <option value="Sim">Sim</option>
@@ -283,69 +286,270 @@ function PreAtendimentoPage() {
             </select>
           </div>
         );
+
       case 'Trabalhista':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="col-span-full font-semibold text-slate-700">Detalhes Trabalhistas</h4>
-            <input name="triagem.empresa" placeholder="Nome da Empresa" className="input-base" onChange={handleChange} />
+            <input name="triagem.empresa" placeholder="Nome da empresa" className="input-base" onChange={handleChange} />
             <input name="triagem.cargo" placeholder="Cargo/Função" className="input-base" onChange={handleChange} />
             <div className="flex gap-2">
-              <input name="triagem.admissao" type="date" className="input-base" title="Data de Admissão" onChange={handleChange} />
-              <input name="triagem.demissao" type="date" className="input-base" title="Data de Demissão" onChange={handleChange} />
+              <input name="triagem.admissao" type="date" title="Data de admissão" className="input-base" onChange={handleChange} />
+              <input name="triagem.demissao" type="date" title="Data de demissão" className="input-base" onChange={handleChange} />
             </div>
-            <input name="triagem.salario" placeholder="Último Salário (R$)" type="number" className="input-base" onChange={handleChange} />
+            <input name="triagem.salario" placeholder="Último salário (R$)" type="number" className="input-base" onChange={handleChange} />
+            <select name="triagem.registroCLT" className="select-base" onChange={handleChange}>
+              <option value="">Registro em carteira?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+            <select name="triagem.horasExtras" className="select-base" onChange={handleChange}>
+              <option value="">Teve horas extras?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
           </div>
         );
+
       case 'Previdenciário':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="col-span-full font-semibold text-slate-700">Detalhes Previdenciários</h4>
-            <input name="triagem.tipoBeneficio" placeholder="Tipo de Benefício (ex: Aposentadoria)" className="input-base" onChange={handleChange} />
-            <input name="triagem.numeroBeneficio" placeholder="Número do Benefício (NB)" className="input-base" onChange={handleChange} />
+            <input name="triagem.tipoBeneficio" placeholder="Tipo de benefício (ex: aposentadoria)" className="input-base" onChange={handleChange} />
+            <input name="triagem.numeroBeneficio" placeholder="Número do benefício (NB)" className="input-base" onChange={handleChange} />
+            <select name="triagem.statusINSS" className="select-base" onChange={handleChange}>
+              <option value="">Status no INSS</option>
+              <option value="Negado">Negado</option>
+              <option value="Em análise">Em análise</option>
+              <option value="Concedido">Concedido</option>
+              <option value="Revisão">Revisão</option>
+            </select>
+            <input name="triagem.dataRequerimento" type="date" title="Data do requerimento" className="input-base" onChange={handleChange} />
           </div>
         );
+
       case 'Família e Sucessões':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="col-span-full font-semibold text-slate-700">Detalhes Familiares</h4>
+
+            <select name="triagem.tipoDemandaFamilia" className="select-base" onChange={handleChange}>
+              <option value="">Tipo de demanda</option>
+              <option value="Divórcio">Divórcio</option>
+              <option value="Guarda">Guarda</option>
+              <option value="Pensão">Pensão</option>
+              <option value="Inventário">Inventário</option>
+              <option value="Partilha">Partilha</option>
+              <option value="União Estável">União estável</option>
+            </select>
+
             <select name="triagem.criancas" className="select-base" onChange={handleChange}>
               <option value="">Há crianças menores envolvidas?</option>
               <option value="Sim">Sim</option>
               <option value="Não">Não</option>
             </select>
-            <input name="triagem.situacaoConvivencia" placeholder="Situação atual (ex: morando junto, separado)" className="input-base" onChange={handleChange} />
+
+            <input name="triagem.situacaoConvivencia" placeholder="Situação atual (ex: separado, morando junto)" className="input-base" onChange={handleChange} />
+
+            <select name="triagem.bensEnvolvidos" className="select-base" onChange={handleChange}>
+              <option value="">Há bens envolvidos?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+
+            <select name="triagem.medidaProtetiva" className="select-base" onChange={handleChange}>
+              <option value="">Há medida protetiva?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
           </div>
         );
+
       case 'Cível':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="col-span-full font-semibold text-slate-700">Detalhes Cíveis</h4>
             <input name="triagem.naturezaDano" placeholder="Natureza da dívida ou dano" className="input-base" onChange={handleChange} />
-            <input name="triagem.valorEnvolvido" placeholder="Valores aproximados envolvidos (R$)" type="number" className="input-base" onChange={handleChange} />
+            <input name="triagem.valorEnvolvido" placeholder="Valor aproximado envolvido (R$)" type="number" className="input-base" onChange={handleChange} />
+            <select name="triagem.existeContrato" className="select-base" onChange={handleChange}>
+              <option value="">Existe contrato?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+            <select name="triagem.haCobrancaJudicial" className="select-base" onChange={handleChange}>
+              <option value="">Há cobrança judicial?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
           </div>
         );
+
+      case 'Criminal':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Detalhes Criminais</h4>
+            <input name="triagem.tipoCrime" placeholder="Tipo de ocorrência (ex: ameaça, furto, etc.)" className="input-base" onChange={handleChange} />
+            <input name="triagem.dataFato" type="date" title="Data do fato" className="input-base" onChange={handleChange} />
+            <select name="triagem.existeBO" className="select-base" onChange={handleChange}>
+              <option value="">Existe BO?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+            <select name="triagem.haAudiencia" className="select-base" onChange={handleChange}>
+              <option value="">Já existe audiência?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </div>
+        );
+
+      case 'Imobiliário':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Detalhes Imobiliários</h4>
+            <select name="triagem.tipoImovel" className="select-base" onChange={handleChange}>
+              <option value="">Tipo de imóvel</option>
+              <option value="Casa">Casa</option>
+              <option value="Apartamento">Apartamento</option>
+              <option value="Terreno">Terreno</option>
+              <option value="Comercial">Comercial</option>
+            </select>
+
+            <select name="triagem.tipoProblemaImobiliario" className="select-base" onChange={handleChange}>
+              <option value="">Tipo de problema</option>
+              <option value="Locação">Locação</option>
+              <option value="Compra e venda">Compra e venda</option>
+              <option value="Condomínio">Condomínio</option>
+              <option value="Usucapião">Usucapião</option>
+              <option value="Posse/Despejo">Posse/Despejo</option>
+            </select>
+
+            <select name="triagem.existeContrato" className="select-base" onChange={handleChange}>
+              <option value="">Existe contrato?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+
+            <input name="triagem.valorImovel" placeholder="Valor aproximado do imóvel (R$)" type="number" className="input-base" onChange={handleChange} />
+            <input name="triagem.cidadeUFImovel" placeholder="Cidade/UF do imóvel" className="input-base" onChange={handleChange} />
+          </div>
+        );
+
+      case 'Tributário':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Detalhes Tributários</h4>
+            <input name="triagem.tipoTributo" placeholder="Tipo de tributo (ex: IPTU, ICMS, IR)" className="input-base" onChange={handleChange} />
+            <input name="triagem.anoCompetencia" placeholder="Ano de competência" type="number" className="input-base" onChange={handleChange} />
+            <input name="triagem.valorEstimado" placeholder="Valor estimado (R$)" type="number" className="input-base" onChange={handleChange} />
+            <select name="triagem.temAutoInfracao" className="select-base" onChange={handleChange}>
+              <option value="">Tem auto de infração?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+            <input name="triagem.prazoTributario" type="date" title="Prazo (se houver)" className="input-base" onChange={handleChange} />
+          </div>
+        );
+
+      case 'Empresarial':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Detalhes Empresariais</h4>
+            <select name="triagem.tipoEmpresa" className="select-base" onChange={handleChange}>
+              <option value="">Tipo de empresa</option>
+              <option value="MEI">MEI</option>
+              <option value="ME">ME</option>
+              <option value="EPP">EPP</option>
+              <option value="LTDA">LTDA</option>
+              <option value="S/A">S/A</option>
+            </select>
+            <input name="triagem.areaConflito" placeholder="Área do conflito (ex: societário, contrato, cobrança)" className="input-base" onChange={handleChange} />
+            <input name="triagem.valorEnvolvidoEmpresarial" placeholder="Valor envolvido (R$)" type="number" className="input-base" onChange={handleChange} />
+            <select name="triagem.existeContrato" className="select-base" onChange={handleChange}>
+              <option value="">Existe contrato?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+            <select name="triagem.sociosEnvolvidos" className="select-base" onChange={handleChange}>
+              <option value="">Há sócios envolvidos?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </div>
+        );
+
+      case 'Bancário/Financeiro':
+      case 'Bancário / Financeiro':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Detalhes Bancários/Financeiros</h4>
+            <input name="triagem.nomeBanco" placeholder="Banco/Instituição" className="input-base" onChange={handleChange} />
+            <select name="triagem.tipoProblemaBancario" className="select-base" onChange={handleChange}>
+              <option value="">Tipo de problema</option>
+              <option value="Juros abusivos">Juros abusivos</option>
+              <option value="Fraude">Fraude</option>
+              <option value="Consignado">Consignado</option>
+              <option value="Cartão de crédito">Cartão de crédito</option>
+              <option value="Renegociação">Renegociação</option>
+              <option value="Negativação indevida">Negativação indevida</option>
+            </select>
+            <input name="triagem.valorCobrado" placeholder="Valor cobrado (R$)" type="number" className="input-base" onChange={handleChange} />
+            <select name="triagem.existeNegativacao" className="select-base" onChange={handleChange}>
+              <option value="">Houve negativação?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+            <input name="triagem.dataInicioProblema" type="date" title="Início do problema" className="input-base" onChange={handleChange} />
+          </div>
+        );
+
+      case 'Administrativo':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Detalhes Administrativos</h4>
+            <input name="triagem.orgaoEnvolvido" placeholder="Órgão envolvido (ex: INSS, Prefeitura)" className="input-base" onChange={handleChange} />
+            <input name="triagem.tipoAtoAdministrativo" placeholder="Tipo de ato (multa, indeferimento...)" className="input-base" onChange={handleChange} />
+            <input name="triagem.numeroProcessoAdm" placeholder="Número do processo administrativo (se houver)" className="input-base" onChange={handleChange} />
+            <input name="triagem.prazoRecurso" type="date" title="Prazo de recurso (se houver)" className="input-base" onChange={handleChange} />
+            <select name="triagem.temDocumentoOficial" className="select-base" onChange={handleChange}>
+              <option value="">Tem documento oficial?</option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </div>
+        );
+
+      case 'Outros':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="col-span-full font-semibold text-slate-700">Outras Categorias</h4>
+
+            <select name="triagem.categoriaOutros" className="select-base" onChange={handleChange}>
+              <option value="">Selecione a categoria</option>
+              <option value="Ambiental">Ambiental</option>
+              <option value="Direito Digital">Direito Digital</option>
+              <option value="Internacional">Direito Internacional</option>
+              <option value="Marcas e Patentes">Marcas e Patentes</option>
+              <option value="Direito da Saúde">Direito da Saúde</option>
+              <option value="Educacional">Educacional</option>
+              <option value="Direito Eleitoral">Direito Eleitoral</option>
+              <option value="Direito Militar">Direito Militar</option>
+              <option value="Direito do Trânsito">Direito do Trânsito</option>
+            </select>
+
+            <input
+              name="triagem.descricaoOutros"
+              placeholder="Descreva brevemente a demanda"
+              className="input-base"
+              onChange={handleChange}
+            />
+          </div>
+        );
+
       default:
         return null;
     }
   };
-
-  // TELA DE SUCESSO
-  if (successForm) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center animate-in fade-in zoom-in">
-        <div className="bg-green-100 p-4 rounded-full mb-6">
-          <CheckCircle2 className="w-16 h-16 text-green-600" />
-        </div>
-        <h2 className="text-3xl font-bold text-slate-800 mb-4">Pré-atendimento Enviado!</h2>
-        <p className="text-lg text-slate-600 max-w-md">
-          Recebemos suas informações com sucesso. Nossa equipe jurídica analisará seu caso e entrará em contato pelo WhatsApp informado em breve.
-        </p>
-        <button onClick={() => window.location.href = '/login'} className="btn-primary mt-8 w-auto px-8">
-          Voltar ao Início
-        </button>
-      </div>
-    );
-  }
 
   // Até formcontent
   const FormContent = () => (

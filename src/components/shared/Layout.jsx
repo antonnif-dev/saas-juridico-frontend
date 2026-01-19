@@ -6,15 +6,17 @@ import { useAuth } from '@/context/AuthContext';
 import apiClient from '@/services/apiClient';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useLocation } from "react-router-dom";
 
 function Layout() {
   const { currentUser, userRole, loading } = useAuth();
   if (loading) return null;
-  
+
   const [settings, setSettings] = useState({});
   const isAdmin = userRole === 'administrador';
   const isAdvogado = userRole === 'advogado';
   const isStaff = isAdmin || isAdvogado;
+  const location = useLocation();
 
   useEffect(() => {
     const fetchTheme = async () => {
@@ -73,107 +75,122 @@ function Layout() {
     }
   };
 
+  const navLinkClass = (path) => {
+    const isActive = location.pathname.startsWith(path);
+
+    return `
+    px-3 py-1 rounded-md transition-all
+    ${isActive
+        ? "bg-white/20 font-semibold shadow-sm"
+        : "hover:bg-white/10 hover:opacity-90"}
+  `;
+  };
+
   return (
-    <div>
-      <header
-        className="relative z-50 w-full border-b shadow-sm transition-all"
-        style={{ backgroundColor: 'var(--header-bg)', color: 'var(--header-text)' }}
-      >
-        <nav
-          className='flex flex-col gap-3 p-4 transition-colors duration-300'
-          style={{
-            backgroundColor: 'var(--cor-navbar-fundo)',
-            color: 'var(--cor-navbar-texto)'
-          }}
+    <div
+      key={location.pathname}
+      className="animate-page"
+    >
+      <div>
+        <header
+          className="relative z-50 w-full border-b shadow-sm transition-all"
+          style={{ backgroundColor: 'var(--header-bg)', color: 'var(--header-text)' }}
         >
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center">
-              {/* Lógica de Logo vs Texto */}
-              {settings.headerType === 'image' && settings.logoUrl ? (
-                <img
-                  src={settings.logoUrl}
-                  alt="Logo"
-                  style={getLogoShapeStyle(settings.headerLogoShape || 'square')}
-                />
-              ) : (
-                <h1
-                  className='break-all font-bold leading-tight m-0 text-center'
-                  style={{
-                    fontSize: settings.headerLogoSize || 'var(--font-size-h1)',
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: settings.headerTitle || 'SaaS <br /> Jurídico'
-                  }}
-                />
-              )}
+          <nav
+            className='flex flex-col gap-3 p-4 transition-colors duration-300'
+            style={{
+              backgroundColor: 'var(--cor-navbar-fundo)',
+              color: 'var(--cor-navbar-texto)'
+            }}
+          >
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center">
+                {/* Lógica de Logo vs Texto */}
+                {settings.headerType === 'image' && settings.logoUrl ? (
+                  <img
+                    src={settings.logoUrl}
+                    alt="Logo"
+                    style={getLogoShapeStyle(settings.headerLogoShape || 'square')}
+                  />
+                ) : (
+                  <h1
+                    className='break-all font-bold leading-tight m-0 text-center'
+                    style={{
+                      fontSize: settings.headerLogoSize || 'var(--font-size-h1)',
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: settings.headerTitle || 'SaaS <br /> Jurídico'
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Links de Navegação Principal */}
+              <div className="flex gap-4 font-medium">
+                <Link to="/dashboard" className={navLinkClass("/dashboard")}>Dashboard</Link>
+                <Link to={isStaff ? "/processos" : "/portal/processos"} className="hover:opacity-80"> Processos </Link>
+                {/* Oculto para Clientes */}
+                {isStaff && (
+                  <>
+                    <Link to="/clientes" className={navLinkClass("/clientes")}>Clientes</Link>
+                    <Link to="/agenda" className={navLinkClass("/agenda")}>Agenda</Link>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Links de Navegação Principal */}
-            <div className="flex gap-4 font-medium">
-              <Link to="/dashboard" className="hover:opacity-80">Dashboard</Link>
-              <Link to="/processos" className="hover:opacity-80">Processos</Link>
+            {/* Linha inferior do cabeçalho */}
+            <div className="flex justify-between items-center border-t border-white/20">
+              <div className="flex items-center gap-8 ml-4">
+                {/* Exclusivo Admin */}
+                {isAdmin && (
+                  <Link to="/equipe" className={navLinkClass("/equipe")}>Equipe</Link>
+                )}
 
-              {/* Oculto para Clientes */}
-              {isStaff && (
-                <>
-                  <Link to="/clientes" className="hover:opacity-80">Clientes</Link>
-                  <Link to="/agenda" className="hover:opacity-80">Agenda</Link>
-                </>
-              )}
+                {/* Oculto para Clientes */}
+                {isStaff && (
+                  <Link to="/relatorios" className={navLinkClass("/relatorios")}>Relatórios</Link>
+                )}
+
+                {/* Exclusivo Admin */}
+                {isAdmin && (
+                  <Link to="/admin/tema" className={navLinkClass("/admin/tema")}>Aparência do site</Link>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/perfil"
+                  className="group flex items-center gap-2 p-1 rounded-full hover:bg-white/10 transition-all"
+                  title="Editar Perfil"
+                >
+                  <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-white/30 transition-all">
+                    {(currentUser?.photoUrl || currentUser?.photoURL) ? (
+                      <img
+                        src={currentUser.photoUrl || currentUser.photoURL}
+                        alt="Avatar"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-slate-500">
+                        <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </Link>
+                <LogoutButton />
+              </div>
             </div>
-          </div>
+          </nav>
+        </header>
 
-          {/* Linha inferior do cabeçalho */}
-          <div className="flex justify-between items-center border-t border-white/20">
-            <div className="flex items-center gap-8 ml-4">
-              {/* Exclusivo Admin */}
-              {isAdmin && (
-                <Link to="/equipe" className="text-sm opacity-80 hover:opacity-100">Equipe</Link>
-              )}
+        {/* Barra Lateral / Inferior - Também precisará de filtro interno */}
+        <NavigationBars />
 
-              {/* Oculto para Clientes */}
-              {isStaff && (
-                <Link to="/relatorios" className="text-sm opacity-80 hover:opacity-100">Relatórios</Link>
-              )}
-
-              {/* Exclusivo Admin */}
-              {isAdmin && (
-                <Link to="/admin/tema" className="text-sm opacity-80 hover:opacity-100">Aparência do site</Link>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Link
-                to="/perfil"
-                className="group flex items-center gap-2 p-1 rounded-full hover:bg-white/10 transition-all"
-                title="Editar Perfil"
-              >
-                <div className="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-white/30 transition-all">
-                  {(currentUser?.photoUrl || currentUser?.photoURL) ? (
-                    <img
-                      src={currentUser.photoUrl || currentUser.photoURL}
-                      alt="Avatar"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-slate-500">
-                      <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-              </Link>
-              <LogoutButton />
-            </div>
-          </div>
-        </nav>
-      </header>
-
-      {/* Barra Lateral / Inferior - Também precisará de filtro interno */}
-      <NavigationBars />
-
-      <main className="p-5 pb-24 md:pb-8 md:mx-24 transition-all duration-300">
-        <Outlet />
-      </main>
+        <main className="p-5 pb-24 md:pb-8 md:mx-24 transition-all duration-300">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

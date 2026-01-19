@@ -30,7 +30,6 @@ import AtendimentoPage from './pages/AtendimentoPage';
 import PosAtendimentoPage from './pages/PosAtendimentoPage';
 import NotificacaoPage from './pages/NotificacaoPage';
 import MensagensPage from './pages/MensagensPage';
-import ClientMessagesPage from './pages/ClientMessagesPage';
 import TransactionsPage from './pages/TransactionsPage';
 import ClientTriagemPage from './pages/client/ClientTriagemPage';
 import UserProfilePage from '@/pages/UserProfilePage';
@@ -48,6 +47,11 @@ import JurisprudenciaPage from './pages/escritorio/JurisprudenciaPage';
 import PrivacidadePage from './pages/escritorio/PrivacidadePage';
 import TermosPage from './pages/escritorio/TermosPage';
 import FaleConoscoPage from './pages/escritorio/FaleConoscoPage';
+
+// Páginas cliente
+import ClientCasesPage from "./pages/client/ClientCasesPage";
+import ClientPaymentsPage from "./pages/client/ClientPaymentsPage";
+import ClientMessagesPage from './pages/client/ClientMessagesPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -92,6 +96,9 @@ function App() {
             <Route path="/notificacoes" element={<NotificacaoPage />} />
             <Route path="/transacoes" element={<TransactionsPage />} />
             <Route path="/triagem" element={<PreAtendimentoPage />} />
+            <Route path="/portal/processos" element={<ClientCasesPage />} />
+            <Route path="/portal/pagamentos" element={<ClientPaymentsPage />} />
+            <Route path="/portal/mensagens" element={<ClientMessagesPage />} />
 
             {/* 3. ROTAS DE STAFF (ADVOGADOS E ADMINS) */}
             {isStaff && (
