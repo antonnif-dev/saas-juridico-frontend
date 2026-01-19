@@ -52,6 +52,7 @@ import FaleConoscoPage from './pages/escritorio/FaleConoscoPage';
 import ClientCasesPage from "./pages/client/ClientCasesPage";
 import ClientPaymentsPage from "./pages/client/ClientPaymentsPage";
 import ClientMessagesPage from './pages/client/ClientMessagesPage';
+import ClientAtendimentosPage from './pages/client/ClientAtendimentosPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -88,6 +89,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/processos" element={<CasesPage />} />
             <Route path="/processos/:id" element={<CaseDetailPage />} />
+            <Route path="/portal/processos/:id" element={<ClientCaseDetailPage />} />
             <Route path="perfil" element={<UserProfilePage />} />
             <Route
               path="/mensagens"
@@ -99,6 +101,7 @@ function App() {
             <Route path="/portal/processos" element={<ClientCasesPage />} />
             <Route path="/portal/pagamentos" element={<ClientPaymentsPage />} />
             <Route path="/portal/mensagens" element={<ClientMessagesPage />} />
+            <Route path="/portal/atendimentos" element={<ClientAtendimentosPage />} />
 
             {/* 3. ROTAS DE STAFF (ADVOGADOS E ADMINS) */}
             {isStaff && (
@@ -131,7 +134,7 @@ function App() {
         {/* 5. PORTAL DO CLIENTE */}
         <Route element={<PrivateRoute />}>
           <Route path="/portal/dashboard" element={<ClientDashboardPage />} />
-          <Route path="/portal/processos/:id" element={<ClientCaseDetailPage />} />
+          <Route path="/portal/preAtendimentoPage" element={<ClientAtendimentosPage />} />          
           <Route path="/portal/negociacao/:id" element={<ClientTriagemPage />} />
         </Route>
 

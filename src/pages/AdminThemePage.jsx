@@ -193,10 +193,11 @@ function AdminThemePage() {
       </div>
 
       <Tabs defaultValue="geral" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="geral">Cores Gerais</TabsTrigger>
-          <TabsTrigger value="cabecalho">Cabeçalho (Topo)</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsTrigger value="geral">Mudanças Gerais</TabsTrigger>
+          <TabsTrigger value="cabecalho">Cabeçalho</TabsTrigger>
           <TabsTrigger value="navegacao">Navegação (Lateral)</TabsTrigger>
+          <TabsTrigger value="cores">Cores</TabsTrigger>
         </TabsList>
 
         {/* --- ABA 1: CORES GERAIS --- */}
@@ -368,6 +369,54 @@ function AdminThemePage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="cores">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tabelas de cores (exemplos)</CardTitle>
+            </CardHeader>
+
+            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+              {[
+                { name: "Azul Primário", hex: "#2563EB" },
+                { name: "Verde Sucesso", hex: "#16A34A" },
+                { name: "Vermelho Alerta", hex: "#DC2626" },
+                { name: "Amarelo Destaque", hex: "#FACC15" },
+                { name: "Cinza Base", hex: "#6B7280" },
+                { name: "Preto Texto", hex: "#111827" },
+                { name: "Roxo Criativo", hex: "#7C3AED" },
+                { name: "Laranja Energia", hex: "#F97316" },
+                { name: "Azul Claro", hex: "#38BDF8" },
+              ].map((color) => (
+                <div
+                  key={color.hex}
+                  className="flex items-center gap-3 p-3 border rounded-lg shadow-sm"
+                >
+                  {/* Preview menor */}
+                  <div
+                    className="w-7 h-7 rounded-md border"
+                    style={{ backgroundColor: color.hex }}
+                  />
+
+                  {/* Info compacta */}
+                  <div className="flex-1 leading-tight">
+                    <p className="text-sm font-semibold">{color.name}</p>
+                    <p className="text-xs text-muted-foreground">{color.hex}</p>
+                  </div>
+
+                  {/* Botão copiar compacto */}
+                  <button
+                    onClick={() => navigator.clipboard.writeText(color.hex)}
+                    className="px-2 py-1 text-xs border rounded-md hover:bg-muted transition"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              ))}
+
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

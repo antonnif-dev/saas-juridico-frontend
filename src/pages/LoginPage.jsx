@@ -47,14 +47,14 @@ function LoginPage() {
 
       {/* 1. NAVBAR: Identidade e Navegação */}
       <header className="sticky top-0 z-40 w-full backdrop-blur bg-white/95">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center bg-slate-900">
 
           {/* Logo */}
           <div className="flex pr-4 items-center gap-2 text-slate-900">
-            <div className="bg-slate-900 p-1.5 rounded-md">
+            <div className="bg-slate-500 p-1.5 rounded-md">
               <Scale className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-serif font-bold tracking-tight leading-tight">
+            <span className="text-xl font-serif font-bold tracking-tight leading-tight text-white">
               <span className="block">Escritório</span>
               <span className="block">Saas &</span>
               <span className="block">Jurídico</span>
@@ -63,7 +63,7 @@ function LoginPage() {
 
           {/* Nav + Botão */}
           {/* Nav + Botão */}
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3 text-white">
             <nav className="flex gap-2 md:gap-16 text-sm font-medium text-slate-600">
               <Link to="/escritorio/atuacao" className="hover:text-primary transition-colors">
                 Áreas de Atuação

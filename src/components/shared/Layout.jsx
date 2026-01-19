@@ -103,7 +103,7 @@ function Layout() {
               color: 'var(--cor-navbar-texto)'
             }}
           >
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3 flex-nowrap">
               <div className="flex items-center">
                 {/* Lógica de Logo vs Texto */}
                 {settings.headerType === 'image' && settings.logoUrl ? (
@@ -126,16 +126,27 @@ function Layout() {
               </div>
 
               {/* Links de Navegação Principal */}
-              <div className="flex gap-4 font-medium">
-                <Link to="/dashboard" className={navLinkClass("/dashboard")}>Dashboard</Link>
-                <Link to={isStaff ? "/processos" : "/portal/processos"} className="hover:opacity-80"> Processos </Link>
-                {/* Oculto para Clientes */}
-                {isStaff && (
-                  <>
-                    <Link to="/clientes" className={navLinkClass("/clientes")}>Clientes</Link>
-                    <Link to="/agenda" className={navLinkClass("/agenda")}>Agenda</Link>
-                  </>
-                )}
+              <div className="flex-1 flex justify-end">
+                <div className="flex gap-4 font-medium whitespace-nowrap overflow-x-auto max-w-full">
+                  <Link to="/dashboard" className={navLinkClass("/dashboard")}>Dashboard</Link>
+                  <Link to={isStaff ? "/processos" : "/portal/processos"} className="hover:opacity-80"> Processos </Link>
+                  {/* EXCLUSIVO CLIENTE */}
+                  {!isStaff && (
+                    <Link
+                      to="/portal/atendimentos"
+                      className={navLinkClass("/portal/atendimentos")}
+                    >
+                      Atendimentos
+                    </Link>
+                  )}
+                  {/* Oculto para Clientes */}
+                  {isStaff && (
+                    <>
+                      <Link to="/clientes" className={navLinkClass("/clientes")}>Clientes</Link>
+                      <Link to="/agenda" className={navLinkClass("/agenda")}>Agenda</Link>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
