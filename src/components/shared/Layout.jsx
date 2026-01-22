@@ -103,7 +103,7 @@ function Layout() {
               color: 'var(--cor-navbar-texto)'
             }}
           >
-            <div className="flex items-center gap-3 flex-nowrap">
+            <div className="flex items-center gap-1 flex-nowrap">
               <div className="flex items-center">
                 {/* Lógica de Logo vs Texto */}
                 {settings.headerType === 'image' && settings.logoUrl ? (
@@ -114,7 +114,7 @@ function Layout() {
                   />
                 ) : (
                   <h1
-                    className='break-all font-bold leading-tight m-0 text-center'
+                    className='font-bold leading-tight m-0 text-center'
                     style={{
                       fontSize: settings.headerLogoSize || 'var(--font-size-h1)',
                     }}
@@ -127,7 +127,7 @@ function Layout() {
 
               {/* Links de Navegação Principal */}
               <div className="flex-1 flex justify-end">
-                <div className="flex gap-2 font-medium whitespace-nowrap overflow-x-auto max-w-full">
+                <div className="flex font-medium whitespace-nowrap overflow-x-auto max-w-full">
                   <Link to="/dashboard" className={navLinkClass("/dashboard")}>Dashboard</Link>
                   <Link to={isStaff ? "/processos" : "/portal/processos"} className={navLinkClass("/processos")}> Processos </Link>
                   {/* EXCLUSIVO CLIENTE */}

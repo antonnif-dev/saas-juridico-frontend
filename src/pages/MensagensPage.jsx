@@ -367,7 +367,7 @@ function MensagensPage() {
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-[#f0f2f5] border-l">
             <div className="w-full h-full flex flex-col items-center justify-center opacity-60">
               {/* Placeholder de chat vazio */}
-              <h3 className="text-xl font-light mb-2">SaaS Jurídico Web</h3>
+              <h3 className="text-xl font-light mb-2">SaaS Jurídico Mnesagens</h3>
               <p className="text-sm">Envie e receba mensagens sem precisar manter seu celular conectado.</p>
             </div>
           </div>

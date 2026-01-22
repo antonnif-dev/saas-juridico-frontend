@@ -13,7 +13,8 @@ const themeMap = {
   corNavbarTexto: '--cor-navbar-texto',
   corFooterFundo: '--cor-footer-fundo',
   corFooterTexto: '--cor-footer-texto',
-  
+  corFooterAtivo: '--cor-footer-ativo',
+
   // Tipografia
   fontFamilia: '--font-familia', // Note que no seu CSS você usa uma variável para a fonte
   fontSizeBase: '--font-size-base',
@@ -28,13 +29,12 @@ const themeMap = {
  */
 export const applyTheme = (theme) => {
   if (!theme) return;
-  
+
   const root = document.documentElement;
-  
+
   Object.keys(theme).forEach(key => {
     const cssVar = themeMap[key];
     if (cssVar && theme[key]) {
-      // Aplica o valor diretamente na raiz do HTML
       root.style.setProperty(cssVar, theme[key]);
     }
   });

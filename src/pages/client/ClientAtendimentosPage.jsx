@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import apiClient from "../../services/apiClient"; // o seu já existe
+import apiClient from "../../services/apiClient";
+
+import { Button } from "../../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 
 export default function ClientAtendimentosPage() {
   const [items, setItems] = useState([]);
@@ -11,38 +22,101 @@ export default function ClientAtendimentosPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState("");
 
+  const statusLabel = useMemo(
+    () => (s) => {
+      if (!s) return "Em análise";
+      return String(s);
+    },
+    []
+  );
+
+  const formatDate = useMemo(
+    () => (value) => {
+      if (!value) return "-";
+
+      // Firestore Timestamp { _seconds } ou string/date normal
+      if (typeof value === "object" && value?._seconds) {
+        const d = new Date(value._seconds * 1000);
+        return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR");
+      }
+
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("pt-BR");
+    },
+    []
+  );
+
+  const formatValue = useMemo(
+    () => (val) => {
+      if (val === null || val === undefined || val === "") return "—";
+      if (typeof val === "boolean") return val ? "Sim" : "Não";
+      if (Array.isArray(val)) return val.length ? val.join(", ") : "—";
+      if (typeof val === "object") return JSON.stringify(val, null, 2);
+      return String(val);
+    },
+    []
+  );
+
+  const renderTriagem = useMemo(
+    () => (triagem) => {
+      if (!triagem || typeof triagem !== "object") {
+        return <p className="text-sm text-slate-500">Sem triagem específica.</p>;
+      }
+
+      const entries = Object.entries(triagem).filter(
+        ([_, v]) => v !== undefined && v !== null && v !== ""
+      );
+
+      if (!entries.length) {
+        return <p className="text-sm text-slate-500">Sem triagem específica.</p>;
+      }
+
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {entries.map(([k, v]) => (
+            <div key={k} className="rounded-md border border-slate-200 bg-white p-3">
+              <p className="text-xs font-semibold text-slate-500">{k}</p>
+              <p className="text-sm text-slate-800">{formatValue(v)}</p>
+            </div>
+          ))}
+        </div>
+      );
+    },
+    [formatValue]
+  );
+
+  // 1) Carrega lista do cliente
   useEffect(() => {
-    const fetch = async () => {
+    const fetchList = async () => {
       setLoading(true);
       setError("");
       try {
         const res = await apiClient.get("/portal/meus-atendimentos");
         setItems(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
+      } catch (e) {
         setError("Não foi possível carregar seus atendimentos.");
+        setItems([]);
       } finally {
         setLoading(false);
       }
     };
-    fetch();
+
+    fetchList();
   }, []);
 
-  const statusLabel = useMemo(() => (s) => {
-    if (!s) return "Em análise";
-    return String(s);
-  }, []);
-
+  // 2) Abre modal e carrega detalhes
   const openModal = async (id) => {
     setOpen(true);
-    setDetailsLoading(true);
-    setDetailsError("");
     setSelected(null);
+    setDetailsError("");
+    setDetailsLoading(true);
 
     try {
       const res = await apiClient.get(`/portal/atendimentos/${id}`);
-      setSelected(res.data);
-    } catch (err) {
+      setSelected(res.data || null);
+    } catch (e) {
       setDetailsError("Não foi possível carregar os detalhes do atendimento.");
+      setSelected(null);
     } finally {
       setDetailsLoading(false);
     }
@@ -52,6 +126,7 @@ export default function ClientAtendimentosPage() {
     setOpen(false);
     setSelected(null);
     setDetailsError("");
+    setDetailsLoading(false);
   };
 
   return (
@@ -59,149 +134,209 @@ export default function ClientAtendimentosPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Atendimentos</h1>
-          <p className="text-slate-600">
-            Aqui você acompanha os pré-atendimentos enviados e as observações registradas pelo escritório.
+          <p className="text-sm text-slate-600">
+            Aqui você acompanha seus pré-atendimentos e vê os detalhes enviados pelo escritório.
           </p>
         </div>
       </div>
 
-      {loading && <div className="text-slate-600">Carregando atendimentos...</div>}
-      {error && <div className="text-red-600">{error}</div>}
+      {loading && <div className="text-slate-600">Carregando...</div>}
+      {!loading && error && <div className="text-red-600">{error}</div>}
 
       {!loading && !error && items.length === 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 text-slate-700">
-          Você ainda não possui atendimentos cadastrados.
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-700">
+          Nenhum atendimento encontrado.
         </div>
       )}
 
       {!loading && !error && items.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
-            <div className="col-span-5">Título</div>
-            <div className="col-span-3">Categoria</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-2 text-right">Ações</div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {items.map((it) => {
+            const createdAt =
+              it.createdAt || it.dataCriacao || it.created_at || it.dataSolicitacao;
 
-          {items.map((it) => (
-            <div key={it.id} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-100 items-center">
-              <div className="col-span-5">
-                <div className="font-semibold text-slate-900">{it.titulo || it.assunto || "Pré-atendimento"}</div>
-                <div className="text-xs text-slate-500">
-                  {it.numeroProtocolo ? `Protocolo: ${it.numeroProtocolo}` : ""}
-                </div>
-              </div>
+            return (
+              <Card key={it.id} className="border-slate-200">
+                <CardHeader className="flex flex-row items-start justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-lg">
+                      {it.titulo || it.assunto || "Pré-atendimento"}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {it.numeroProtocolo
+                        ? `Protocolo: ${it.numeroProtocolo}`
+                        : "Protocolo não informado"}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{statusLabel(it.status)}</Badge>
+                </CardHeader>
 
-              <div className="col-span-3 text-slate-700 text-sm">
-                {it.categoria || it.area || "-"}
-              </div>
+                <CardContent className="space-y-3">
+                  <div className="text-sm text-slate-600">
+                    <p>
+                      <span className="font-semibold text-slate-700">Categoria:</span>{" "}
+                      {it.categoria || it.area || "-"}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-700">Criado em:</span>{" "}
+                      {formatDate(createdAt)}
+                    </p>
+                  </div>
 
-              <div className="col-span-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-slate-100 text-slate-700">
-                  {statusLabel(it.status)}
-                </span>
-              </div>
-
-              <div className="col-span-2 text-right">
-                <button
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-slate-900 text-white hover:bg-slate-800"
-                  onClick={() => openModal(it.id)}
-                >
-                  Ver detalhes
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div className="flex items-center justify-end">
+                    <Button onClick={() => openModal(it.id)}>Ver detalhes</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* MODAL */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={closeModal} />
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) closeModal();
+          else setOpen(true);
+        }}
+      >
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes do pré-atendimento</DialogTitle>
+            <DialogDescription>
+              Visualização das informações enviadas e do retorno do escritório.
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
-              <div>
-                <div className="text-xs text-slate-500">Detalhes do atendimento</div>
-                <div className="text-lg font-bold text-slate-900">
-                  {selected?.titulo || selected?.assunto || "Pré-atendimento"}
-                </div>
-              </div>
+          {detailsLoading && <div className="text-slate-600">Carregando detalhes...</div>}
+          {detailsError && <div className="text-red-600">{detailsError}</div>}
 
-              <button
-                className="px-3 py-2 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100"
-                onClick={closeModal}
-              >
-                Fechar
-              </button>
-            </div>
-
-            <div className="p-5 max-h-[75vh] overflow-auto">
-              {detailsLoading && <div className="text-slate-600">Carregando detalhes...</div>}
-              {detailsError && <div className="text-red-600">{detailsError}</div>}
-
-              {!detailsLoading && !detailsError && selected && (
-                <div className="space-y-6">
-                  {/* Bloco “estilo CaseDetailPage” */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div>
-                      <div className="text-xs text-slate-500">Categoria</div>
-                      <div className="font-semibold text-slate-900">{selected.categoria || selected.area || "-"}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500">Status</div>
-                      <div className="font-semibold text-slate-900">{statusLabel(selected.status)}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500">Protocolo</div>
-                      <div className="font-semibold text-slate-900">{selected.numeroProtocolo || "-"}</div>
-                    </div>
+          {!detailsLoading && !detailsError && selected && (
+            <div className="space-y-6">
+              {/* Cabeçalho estilo CaseDetail */}
+              <Card className="border-slate-200">
+                <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl">
+                      {selected.titulo || selected.assunto || "Pré-atendimento"}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {selected.numeroProtocolo
+                        ? `Protocolo: ${selected.numeroProtocolo}`
+                        : "Protocolo não informado"}
+                    </p>
                   </div>
 
-                  {/* Dados do cliente / triagem enviada */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-4">
-                    <h3 className="font-bold text-slate-900 mb-3">Informações enviadas</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Field label="Nome" value={selected.nome || selected.clienteNome || "-"} />
-                      <Field label="WhatsApp" value={selected.whatsapp || selected.telefone || "-"} />
-                      <Field label="E-mail" value={selected.email || "-"} />
-                      <Field label="Resumo" value={selected.resumo || selected.descricao || "-"} multiline />
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{statusLabel(selected.status)}</Badge>
+                    {selected.urgencia && <Badge variant="outline">{selected.urgencia}</Badge>}
                   </div>
+                </CardHeader>
 
-                  {/* Observações do escritório (admin/advogado) */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-4">
-                    <h3 className="font-bold text-slate-900 mb-3">Observações do escritório</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Field
-                        label="Parecer inicial"
-                        value={selected.parecerInicial || selected.observacoes || "-"}
-                        multiline
-                      />
-                      <Field
-                        label="Próximos passos"
-                        value={selected.proximosPassos || selected.orientacoes || "-"}
-                        multiline
-                      />
-                    </div>
-                  </div>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field label="Categoria" value={selected.categoria || selected.area || "—"} />
+                  <Field
+                    label="Criado em"
+                    value={formatDate(
+                      selected.createdAt ||
+                        selected.dataCriacao ||
+                        selected.created_at ||
+                        selected.dataSolicitacao
+                    )}
+                  />
+                  <Field label="E-mail" value={selected.email || "—"} />
+                  <Field label="WhatsApp" value={selected.whatsapp || selected.telefone || "—"} />
+                  <Field
+                    label="Resumo do problema"
+                    value={selected.resumoProblema || selected.resumo || selected.descricao || "—"}
+                    multiline
+                  />
+                </CardContent>
+              </Card>
 
-                  {/* Se seu preatendimento tiver campos extras: triagem */}
-                  {selected.triagem && (
-                    <div className="bg-white border border-slate-200 rounded-xl p-4">
-                      <h3 className="font-bold text-slate-900 mb-3">Triagem</h3>
-                      <pre className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 overflow-auto">
-                        {JSON.stringify(selected.triagem, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
+              {/* Endereço (se existir) */}
+              {selected.endereco && (
+                <Card className="border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-base">Endereço</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Field label="Rua" value={selected.endereco?.rua || "—"} />
+                    <Field
+                      label="Número / Compl."
+                      value={
+                        `${selected.endereco?.numero || "—"}${
+                          selected.endereco?.complemento ? `, ${selected.endereco.complemento}` : ""
+                        }`
+                      }
+                    />
+                    <Field label="Bairro" value={selected.endereco?.bairro || "—"} />
+                    <Field
+                      label="Cidade / UF"
+                      value={`${selected.endereco?.cidade || "—"} / ${selected.endereco?.estado || "—"}`}
+                    />
+                    <Field label="CEP" value={selected.endereco?.cep || "—"} />
+                  </CardContent>
+                </Card>
               )}
+
+              {/* Triagem */}
+              <Card className="border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Triagem específica</CardTitle>
+                </CardHeader>
+                <CardContent>{renderTriagem(selected.triagem)}</CardContent>
+              </Card>
+
+              {/* Complementos */}
+              <Card className="border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Complementos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Field label="Documentos selecionados" value={formatValue(selected.documentos)} />
+                  <Field label="Objetivo" value={selected.objetivo || "—"} />
+                  <Field
+                    label="Informação extra"
+                    value={selected.informacaoExtra || "—"}
+                    multiline
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Observações do escritório */}
+              {(selected.parecerInicial ||
+                selected.observacoes ||
+                selected.proximosPassos ||
+                selected.orientacoes) && (
+                <Card className="border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="text-base">Observações do escritório</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Field
+                      label="Parecer inicial"
+                      value={selected.parecerInicial || selected.observacoes || "—"}
+                      multiline
+                    />
+                    <Field
+                      label="Próximos passos"
+                      value={selected.proximosPassos || selected.orientacoes || "—"}
+                      multiline
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={closeModal}>
+                  Fechar
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -209,7 +344,7 @@ export default function ClientAtendimentosPage() {
 function Field({ label, value, multiline }) {
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xs font-semibold text-slate-500">{label}</div>
       <div className={`text-sm text-slate-900 ${multiline ? "whitespace-pre-wrap" : ""}`}>
         {value}
       </div>

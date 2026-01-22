@@ -14,6 +14,7 @@ const defaultSettings = {
   corFundo: '#f4f7f9',
   corFundoCard: '#ffffff',
   corBorda: '#e2e8f0',
+  corFooterAtivo: '#4299e1',
 
   // Texto
   corTextoPrimario: '#1a202c',
@@ -362,9 +363,9 @@ function AdminThemePage() {
           <Card>
             <CardHeader><CardTitle>Barra de Navegação (Lateral/Inferior)</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ColorPicker label="Cor de Fundo" name="sidebarBg" defaultValue="#ffffff" />
-              <ColorPicker label="Cor dos Ícones (Padrão)" name="sidebarText" defaultValue="#64748b" />
-              <ColorPicker label="Cor do Ícone Ativo" name="sidebarActive" defaultValue="#0f172a" />
+              <ColorPicker label="Cor de Fundo" name="corFooterFundo" defaultValue="#1a202c" />
+              <ColorPicker label="Cor dos Ícones (Padrão)" name="corFooterTexto" defaultValue="#f4f7f9" />
+              <ColorPicker label="Cor do Ícone Ativo" name="corFooterAtivo" defaultValue="#4299e1" />
             </CardContent>
           </Card>
         </TabsContent>
@@ -378,7 +379,10 @@ function AdminThemePage() {
             <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
 
               {[
+                { name: "Azul Escuro", hex: "#111184" },
                 { name: "Azul Primário", hex: "#2563EB" },
+                { name: "Azul Claro", hex: "#38BDF8" },
+                { name: "Azul Bebê", hex: "#b7d9ec" },
                 { name: "Verde Sucesso", hex: "#16A34A" },
                 { name: "Vermelho Alerta", hex: "#DC2626" },
                 { name: "Amarelo Destaque", hex: "#FACC15" },
@@ -386,7 +390,8 @@ function AdminThemePage() {
                 { name: "Preto Texto", hex: "#111827" },
                 { name: "Roxo Criativo", hex: "#7C3AED" },
                 { name: "Laranja Energia", hex: "#F97316" },
-                { name: "Azul Claro", hex: "#38BDF8" },
+
+
               ].map((color) => (
                 <div
                   key={color.hex}

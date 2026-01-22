@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Plus, FileText, Check, X, Bot, Sparkles, ArrowLeft, Eye } from 'lucide-react';
 
 // Componentes Shadcn/ui
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,15 @@ function PreAtendimentoPage() {
   // estado para clientes existentes e busca
   const [existingClients, setExistingClients] = useState([]);
   const [isExistingClient, setIsExistingClient] = useState(false);
+
+  // Modal de detalhes do Pré-Atendimento (Admin/Advogado)
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
+
+  const openLeadDetails = (lead) => {
+    setSelectedLead(lead);
+    setIsDetailsOpen(true);
+  };
 
   // --- FORMULÁRIO: ESTADO INICIAL ---
   const initialFormState = {
@@ -852,6 +861,32 @@ function PreAtendimentoPage() {
     </>
   );
 
+  const formatValue = (val) => {
+    if (val === null || val === undefined || val === '') return '—';
+    if (typeof val === 'boolean') return val ? 'Sim' : 'Não';
+    if (Array.isArray(val)) return val.length ? val.join(', ') : '—';
+    if (typeof val === 'object') return JSON.stringify(val, null, 2);
+    return String(val);
+  };
+
+  const renderTriagem = (triagem) => {
+    if (!triagem || typeof triagem !== 'object') return <p className="text-sm text-slate-500">Sem triagem específica.</p>;
+
+    const entries = Object.entries(triagem).filter(([_, v]) => v !== undefined && v !== null && v !== '');
+    if (!entries.length) return <p className="text-sm text-slate-500">Sem triagem específica.</p>;
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {entries.map(([k, v]) => (
+          <div key={k} className="rounded-md border border-slate-200 bg-white p-3">
+            <p className="text-xs font-semibold text-slate-500">{k}</p>
+            <p className="text-sm text-slate-800">{formatValue(v)}</p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // --- RENDERIZAÇÃO ---
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
@@ -902,7 +937,12 @@ function PreAtendimentoPage() {
                   <Card key={lead.id} className={`border-l-4 ${lead.status === 'Convertido' ? 'border-l-green-500 opacity-60' : lead.status === 'Em Análise' ? 'border-l-blue-500' : 'border-l-yellow-500'}`}>
                     <CardHeader className="flex flex-row justify-between items-start pb-2">
                       <div>
-                        <CardTitle className="text-lg">{lead.nome}</CardTitle>
+                        <CardTitle
+                          className="text-lg cursor-pointer hover:underline hover:text-primary transition-colors"
+                          onClick={() => openLeadDetails(lead)}
+                        >
+                          {lead.nome || 'Sem nome'}
+                        </CardTitle>
                         <p className="text-sm text-muted-foreground">{lead.cpfCnpj || 'CPF não informado'} • {lead.telefone}</p>
                       </div>
                       <Badge variant={lead.status === 'Pendente' ? 'outline' : 'default'}>
@@ -1026,6 +1066,14 @@ function PreAtendimentoPage() {
                           ✓ Processo Criado
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => openLeadDetails(lead)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver detalhes
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))}
@@ -1042,6 +1090,157 @@ function PreAtendimentoPage() {
                 <DialogDescription>Preencha os dados para iniciar uma triagem.</DialogDescription>
               </DialogHeader>
               {FormContent()}
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isDetailsOpen} onOpenChange={(open) => {
+            setIsDetailsOpen(open);
+            if (!open) setSelectedLead(null);
+          }}>
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Detalhes do Pré-Atendimento</DialogTitle>
+                <DialogDescription>
+                  Visualização completa das informações enviadas.
+                </DialogDescription>
+              </DialogHeader>
+
+              {!selectedLead ? (
+                <p className="text-sm text-slate-500">Nenhum atendimento selecionado.</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* Cabeçalho */}
+                  <Card className="border-slate-200">
+                    <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-xl">{selectedLead.nome || '—'}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedLead.cpfCnpj || 'CPF/CNPJ não informado'} • {selectedLead.telefone || '—'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Badge variant={selectedLead.status === 'Pendente' ? 'outline' : 'default'}>
+                          {selectedLead.status || '—'}
+                        </Badge>
+                        {selectedLead.urgencia && (
+                          <Badge variant="secondary">{selectedLead.urgencia}</Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-slate-500">Categoria</p>
+                        <p className="text-sm">{selectedLead.categoria || '—'}</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold text-slate-500">E-mail</p>
+                        <p className="text-sm">{selectedLead.email || '—'}</p>
+                      </div>
+
+                      <div className="space-y-1 md:col-span-2">
+                        <p className="text-xs font-semibold text-slate-500">Resumo do problema</p>
+                        <p className="text-sm whitespace-pre-wrap">{selectedLead.resumoProblema || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Endereço */}
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Endereço</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Rua</p>
+                        <p className="text-sm">{selectedLead.endereco?.rua || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Número / Compl.</p>
+                        <p className="text-sm">
+                          {(selectedLead.endereco?.numero || '—')}{selectedLead.endereco?.complemento ? `, ${selectedLead.endereco.complemento}` : ''}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Bairro</p>
+                        <p className="text-sm">{selectedLead.endereco?.bairro || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Cidade / UF</p>
+                        <p className="text-sm">{selectedLead.endereco?.cidade || '—'} / {selectedLead.endereco?.estado || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">CEP</p>
+                        <p className="text-sm">{selectedLead.endereco?.cep || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Triagem específica */}
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Triagem específica</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {renderTriagem(selectedLead.triagem)}
+                    </CardContent>
+                  </Card>
+
+                  {/* Documentos / objetivo / extras */}
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Complementos</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Documentos selecionados</p>
+                        <p className="text-sm">{formatValue(selectedLead.documentos)}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Objetivo</p>
+                        <p className="text-sm">{selectedLead.objetivo || '—'}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Informação extra</p>
+                        <p className="text-sm whitespace-pre-wrap">{selectedLead.informacaoExtra || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Negociação (se existir) */}
+                  {(selectedLead.proposalValue || selectedLead.adminNotes || selectedLead.proposalStatus) && (
+                    <Card className="border-slate-200">
+                      <CardHeader>
+                        <CardTitle className="text-base">Negociação</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500">Valor proposta</p>
+                          <p className="text-sm">{selectedLead.proposalValue ? `R$ ${selectedLead.proposalValue}` : '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500">Status proposta</p>
+                          <p className="text-sm">{selectedLead.proposalStatus || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500">Observações (admin)</p>
+                          <p className="text-sm whitespace-pre-wrap">{selectedLead.adminNotes || '—'}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Rodapé */}
+                  <div className="flex justify-end">
+                    <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+                      Fechar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         </>

@@ -74,7 +74,6 @@ function ClientPaymentsPage() {
   };
 
   const getCategoriaLabel = (cat) => {
-    if (cat === "honorarios") return "Honorários";
     if (cat === "custas") return "Custas/Desp.";
     if (cat === "pagamento") return "Pagamento";
     if (cat === "despesa_geral") return "Despesa (Escritório)";
@@ -289,19 +288,6 @@ function ClientPaymentsPage() {
             Cobranças vencidas (quando houver vencimento).
           </CardContent>
         </Card>
-
-        <Card className="border-slate-200">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-              Honorários
-            </CardDescription>
-            <CardTitle className="text-2xl">{formatBRL(honorariosTotal)}</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-slate-500">
-            Total de honorários no período selecionado.
-          </CardContent>
-        </Card>
       </div>
 
       {/* Histórico */}
@@ -327,8 +313,8 @@ function ClientPaymentsPage() {
                     <TableHead>Valor</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="hidden md:table-cell">Venc.</TableHead>
-                    <TableHead>Recibo</TableHead>
-                    <TableHead>Ação</TableHead>
+                    <TableHead>Dados de pagamento</TableHead>
+                    <TableHead>Recibo</TableHead>                    
                   </TableRow>
                 </TableHeader>
 
@@ -357,6 +343,18 @@ function ClientPaymentsPage() {
 
                       <TableCell>{getStatusBadge(t.status)}</TableCell>
 
+                      <TableCell>
+                        {t.status === "pending" ? (
+                          <Button size="sm" onClick={() => handlePay(t)}>
+                            Pagar
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled>
+                            —
+                          </Button>
+                        )}
+                      </TableCell>
+
                       <TableCell className="hidden md:table-cell">
                         {t.dataVencimento ? formatDateBR(t.dataVencimento) : "—"}
                       </TableCell>
@@ -371,18 +369,7 @@ function ClientPaymentsPage() {
                           <span className="text-xs text-slate-500">—</span>
                         )}
                       </TableCell>
-
-                      <TableCell>
-                        {t.status === "pending" ? (
-                          <Button size="sm" onClick={() => handlePay(t)}>
-                            Pagar
-                          </Button>
-                        ) : (
-                          <Button size="sm" variant="outline" disabled>
-                            —
-                          </Button>
-                        )}
-                      </TableCell>
+                      
                     </TableRow>
                   ))}
                 </TableBody>
