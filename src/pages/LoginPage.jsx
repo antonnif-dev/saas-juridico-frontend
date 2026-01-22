@@ -50,11 +50,11 @@ function LoginPage() {
         <div className="container mx-auto px-6 py-4 flex justify-between items-center bg-slate-900">
 
           {/* Logo */}
-          <div className="flex pr-4 items-center gap-2 text-slate-900">
-            <div className="bg-slate-500 p-1.5 rounded-md">
+          <div className="flex pr-4 items-center gap-2 text-white">
+            <div className="bg-slate-900 p-1.5 rounded-md">
               <Scale className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-serif font-bold tracking-tight leading-tight text-white">
+            <span className="text-xl font-serif font-bold tracking-tight leading-tight">
               <span className="block">Escritório</span>
               <span className="block">Saas &</span>
               <span className="block">Jurídico</span>
@@ -63,22 +63,22 @@ function LoginPage() {
 
           {/* Nav + Botão */}
           {/* Nav + Botão */}
-          <div className="flex flex-col items-center gap-3 text-white">
-            <nav className="flex gap-2 md:gap-16 text-sm font-medium text-slate-600">
-              <Link to="/escritorio/atuacao" className="hover:text-primary transition-colors">
+          <div className="flex flex-col items-center gap-3">
+            <nav className="flex gap-2 md:gap-16 text-sm font-medium">
+              <Link to="/escritorio/atuacao" className="!text-white hover:!text-primary transition-colors">
                 Áreas de Atuação
               </Link>
-              <Link to="/escritorio/equipe" className="hover:text-primary transition-colors">
+              <Link to="/escritorio/equipe" className="!text-white hover:!text-primary transition-colors">
                 Nossa Equipe
               </Link>
-              <Link to="/escritorio/jurisprudencia" className="hover:text-primary transition-colors">
+              <Link to="/escritorio/jurisprudencia" className="!text-white hover:!text-primary transition-colors">
                 Jurisprudência
               </Link>
             </nav>
 
             <Button
               variant="outline"
-              className="ml-auto"
+              className="ml-auto text-white"
               onClick={() => navigate('/escritorio/contato')}
             >
               Fale Conosco

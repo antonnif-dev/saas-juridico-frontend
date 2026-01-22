@@ -127,9 +127,9 @@ function Layout() {
 
               {/* Links de Navegação Principal */}
               <div className="flex-1 flex justify-end">
-                <div className="flex gap-4 font-medium whitespace-nowrap overflow-x-auto max-w-full">
+                <div className="flex gap-2 font-medium whitespace-nowrap overflow-x-auto max-w-full">
                   <Link to="/dashboard" className={navLinkClass("/dashboard")}>Dashboard</Link>
-                  <Link to={isStaff ? "/processos" : "/portal/processos"} className="hover:opacity-80"> Processos </Link>
+                  <Link to={isStaff ? "/processos" : "/portal/processos"} className={navLinkClass("/processos")}> Processos </Link>
                   {/* EXCLUSIVO CLIENTE */}
                   {!isStaff && (
                     <Link
