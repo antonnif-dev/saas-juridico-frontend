@@ -295,8 +295,103 @@ function CaseDetailPage() {
       {isEditing ? (
         <form onSubmit={handleUpdate}>
           <h3>Editando Processo</h3>
-          <input name="titulo" value={formData.titulo} onChange={handleFormChange} className='input-base' placeholder="Título" />
-          <input name="numeroProcesso" value={formData.numeroProcesso} onChange={handleFormChange} className='input-base' placeholder="Nº do Processo" />
+          <input
+            name="titulo"
+            value={formData.titulo}
+            onChange={handleFormChange}
+            className="input-base"
+            placeholder="Título"
+          />
+          <input
+            name="numeroProcesso"
+            value={formData.numeroProcesso}
+            onChange={handleFormChange}
+            className="input-base"
+            placeholder="Nº do Processo"
+          />
+
+          {/* ✅ CAMPOS DO PRÉ-ATENDIMENTO (SEM DADOS PESSOAIS) */}
+          <input
+            name="categoria"
+            value={formData.categoria || ''}
+            onChange={handleFormChange}
+            className="input-base"
+            placeholder="Categoria / Área (Pré-atendimento)"
+          />
+
+          <textarea
+            name="resumoProblema"
+            value={formData.resumoProblema || ''}
+            onChange={handleFormChange}
+            className="textarea-base min-h-[120px] min-w-full"
+            placeholder="Resumo do problema (Pré-atendimento)"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              name="dataProblema"
+              type="date"
+              value={formData.dataProblema || ''}
+              onChange={handleFormChange}
+              className="input-base"
+              title="Data aproximada do ocorrido"
+            />
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                name="problemaContinuo"
+                type="checkbox"
+                checked={!!formData.problemaContinuo}
+                onChange={handleFormChange}
+                className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary"
+              />
+              <span className="text-sm">O problema ainda está ocorrendo?</span>
+            </label>
+          </div>
+
+          <input
+            name="parteContrariaNome"
+            value={formData.parteContrariaNome || ''}
+            onChange={handleFormChange}
+            className="input-base"
+            placeholder="Parte Contrária (nome)"
+          />
+
+          <input
+            name="tipoRelacao"
+            value={formData.tipoRelacao || ''}
+            onChange={handleFormChange}
+            className="input-base"
+            placeholder="Tipo de relação (ex: vizinho, patrão, loja)"
+          />
+
+          <input
+            name="objetivo"
+            value={formData.objetivo || ''}
+            onChange={handleFormChange}
+            className="input-base"
+            placeholder="Objetivo do cliente"
+          />
+
+          <select
+            name="urgencia"
+            value={formData.urgencia || 'Média'}
+            onChange={handleFormChange}
+            className="select-base"
+          >
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+          </select>
+
+          <textarea
+            name="informacaoExtra"
+            value={formData.informacaoExtra || ''}
+            onChange={handleFormChange}
+            className="textarea-base min-h-[100px] min-w-full"
+            placeholder="Informações extras"
+          />
+
           <button type="submit">Salvar Alterações</button>
           <button type="button" onClick={() => setIsEditing(false)}>Cancelar</button>
         </form>
@@ -310,8 +405,61 @@ function CaseDetailPage() {
           <p><strong>Status:</strong> {caseDetail.status}</p>
           <p><strong>Comarca:</strong> {caseDetail.comarca}</p>
           <p><strong>Instância:</strong> {caseDetail.instancia}</p>
-          <button onClick={() => setIsEditing(true)}>Editar</button>
-          <button onClick={handleDelete} style={{ marginLeft: '10px', background: 'darkred', color: 'white' }}>Excluir</button>
+
+          {/* ✅ DETALHES COMPLETOS (SEM DADOS PESSOAIS) */}
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Informações do Caso</h3>
+            <p><strong>Categoria:</strong> {caseDetail.categoria || '-'}</p>
+            <p><strong>Objetivo:</strong> {caseDetail.objetivo || '-'}</p>
+            <p><strong>Urgência:</strong> {caseDetail.urgencia || '-'}</p>
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Histórico do problema</h3>
+            <p><strong>Resumo do Problema:</strong> {caseDetail.resumoProblema || '-'}</p>
+            <p><strong>Data aproximada do ocorrido:</strong> {caseDetail.dataProblema || '-'}</p>
+            <p><strong>Problema contínuo:</strong> {caseDetail.problemaContinuo ? 'Sim' : 'Não'}</p>
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Parte contrária e relação</h3>
+            <p><strong>Parte Contrária:</strong> {caseDetail.parteContrariaNome || '-'}</p>
+            <p><strong>Tipo de Relação:</strong> {caseDetail.tipoRelacao || '-'}</p>
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Documentos informados</h3>
+            {Array.isArray(caseDetail.documentos) && caseDetail.documentos.length > 0 ? (
+              <ul style={{ marginLeft: 18 }}>
+                {caseDetail.documentos.map((doc, idx) => (
+                  <li key={`${doc}-${idx}`}>{doc}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>-</p>
+            )}
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Triagem específica</h3>
+            {caseDetail.triagem && typeof caseDetail.triagem === 'object' && Object.keys(caseDetail.triagem).length > 0 ? (
+              <ul style={{ marginLeft: 18 }}>
+                {Object.entries(caseDetail.triagem).map(([k, v]) => (
+                  <li key={k}>
+                    <strong>{k}:</strong> {String(v ?? '-')}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>-</p>
+            )}
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <h3 style={{ marginBottom: 8 }}>Informações extras</h3>
+            <p>{caseDetail.informacaoExtra || '-'}</p>
+          </div>
+
           {podeEditar && (
             <>
               <button onClick={() => setIsEditing(true)}>Editar</button>

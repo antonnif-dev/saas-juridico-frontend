@@ -37,6 +37,29 @@ function PreAtendimentoPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
+  const formatBool = (v) => (v ? 'Sim' : 'Não');
+
+  const formatDateBR = (v) => {
+    if (!v) return '—';
+
+    // ISO "YYYY-MM-DD"
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+      const [y, m, d] = v.split('T')[0].split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    // Firestore Timestamp-like: { _seconds }
+    if (typeof v === 'object' && v?._seconds) {
+      return new Date(v._seconds * 1000).toLocaleDateString('pt-BR');
+    }
+
+    // Date normal
+    const dt = new Date(v);
+    if (!Number.isNaN(dt.getTime())) return dt.toLocaleDateString('pt-BR');
+
+    return String(v);
+  };
+
   const openLeadDetails = (lead) => {
     setSelectedLead(lead);
     setIsDetailsOpen(true);
@@ -1142,6 +1165,88 @@ function PreAtendimentoPage() {
                       <div className="space-y-1 md:col-span-2">
                         <p className="text-xs font-semibold text-slate-500">Resumo do problema</p>
                         <p className="text-sm whitespace-pre-wrap">{selectedLead.resumoProblema || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Dados pessoais */}
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Dados pessoais</CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Tipo de Pessoa</p>
+                        <p className="text-sm">{selectedLead.tipoPessoa || '—'}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Data de Nascimento</p>
+                        <p className="text-sm">{formatDateBR(selectedLead.dataNascimento)}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Estado Civil</p>
+                        <p className="text-sm">{selectedLead.estadoCivil || '—'}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Profissão</p>
+                        <p className="text-sm">{selectedLead.profissao || '—'}</p>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <p className="text-xs font-semibold text-slate-500">Nome da mãe</p>
+                        <p className="text-sm">{selectedLead.nomeMae || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Dados do caso (campos do formulário do cliente) */}
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Dados do caso</CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Data do problema</p>
+                        <p className="text-sm">{formatDateBR(selectedLead.dataProblema)}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Problema contínuo</p>
+                        <p className="text-sm">{formatBool(selectedLead.problemaContinuo)}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Urgência</p>
+                        <p className="text-sm">{selectedLead.urgencia || '—'}</p>
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <p className="text-xs font-semibold text-slate-500">Objetivo</p>
+                        <p className="text-sm">{selectedLead.objetivo || '—'}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Parte contrária */}
+                  <Card className="border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="text-base">Parte contrária</CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Nome</p>
+                        <p className="text-sm">{selectedLead.parteContrariaNome || '—'}</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Tipo de relação</p>
+                        <p className="text-sm">{selectedLead.tipoRelacao || '—'}</p>
                       </div>
                     </CardContent>
                   </Card>
