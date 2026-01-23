@@ -340,31 +340,41 @@ function TransactionsPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
-          <p className="text-muted-foreground">
-            {isAdmin ? "Gerencie as cobranças e receitas do escritório." : "Consulte e realize pagamentos dos seus honorários."}
-          </p>
+      <div className="flex flex-col gap-4">
+
+        {/* Linha 1 — título e descrição */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Financeiro</h1>
+            <p className="text-muted-foreground">
+              {isAdmin
+                ? "Gerencie as cobranças e receitas do escritório."
+                : "Consulte e realize pagamentos dos seus honorários."}
+            </p>
+          </div>
         </div>
 
-        {/* ADICIONE ESTE BLOCO AQUI */}
+        {/* Linha 2 — botões */}
         {isAdmin && (
           <div className="flex gap-2">
             <Button
               onClick={() => setIsExpenseModalOpen(true)}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              <PlusCircle className="w-4 h-4 mr-2" /> Lançar Despesa
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Lançar Despesa
             </Button>
+
             <Button
               onClick={() => setIsRevenueModalOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
-              <PlusCircle className="w-4 h-4 mr-2" /> Lançar Receita
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Lançar Receita
             </Button>
           </div>
         )}
+
       </div>
 
       {/* Cards de Resumo (Só Admin vê o total geral, Cliente vê o dele) */}

@@ -103,7 +103,7 @@ function Layout() {
               color: 'var(--cor-navbar-texto)'
             }}
           >
-            <div className="flex items-center gap-1 flex-nowrap">
+            <div className="flex items-center flex-nowrap">
               <div className="flex items-center">
                 {/* Lógica de Logo vs Texto */}
                 {settings.headerType === 'image' && settings.logoUrl ? (
