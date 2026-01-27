@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://backend-saas-juridico.vercel.app/api/:path*"
+    },
+    {
       "source": "/(manifest\\.json|icons/.*)",
       "destination": "/$1"
     },
