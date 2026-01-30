@@ -718,16 +718,16 @@ function CaseDetailPage() {
                   ) : (
                     <ul style={{ margin: 0, paddingLeft: "18px" }}>
                       {pagamentos.map((p, idx) => (
-                        <li key={d.id || idx} style={{ marginBottom: "10px" }}>
+                        <li key={p.id || idx} style={{ marginBottom: "10px" }}>
                           <div>
-                            <strong>{formatBRL(d.valor ?? d.amount)}</strong>
+                            <strong>{formatBRL(p.valor ?? p.amount)}</strong>
                             {" — "}
-                            {d.titulo || d.descricao || "Sem descrição"}
-                            {d.status ? ` (${d.status})` : ""}
+                            {p.titulo || p.descricao || "Sem descrição"}
+                            {p.status ? ` (${p.status})` : ""}
                           </div>
 
                           <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
-                            {formatDateTimeBR(toDateSafe(d?.createdAt || d?.data || d?.timestamp))}
+                            {formatDateTimeBR(toDateSafe(p?.createdAt || p?.data || p?.timestamp))}
                           </div>
                         </li>
                       ))}

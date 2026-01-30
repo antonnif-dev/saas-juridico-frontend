@@ -13,6 +13,9 @@ function ClientCaseDetailPage() {
   const [activeTab, setActiveTab] = useState("movimentacoes");
   const [previewFile, setPreviewFile] = useState(null);
   const [error, setError] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showInfo, setShowInfo] = useState(true);
 
   const toDateSafe = (value) => {
     if (value?._seconds) return new Date(value._seconds * 1000);
@@ -46,6 +49,33 @@ function ClientCaseDetailPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files?.[0] || null);
+  };
+
+  const handleUploadDocumento = async () => {
+    if (!selectedFile) return;
+
+    try {
+      setIsUploading(true);
+
+      const form = new FormData();
+      form.append("documento", selectedFile);
+
+      await apiClient.post(`/processo/${processoId}/upload`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setSelectedFile(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao enviar documento.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleAddMovimentacao = async (e) => {
     e.preventDefault();
@@ -81,20 +111,70 @@ function ClientCaseDetailPage() {
       {/* Header */}
       <h1 style={{ marginTop: "20px" }}>{caseDetail.titulo}</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <strong>Nº Processo:</strong> {caseDetail.numeroProcesso}
-        </div>
-        <div>
-          <strong>Status:</strong> {caseDetail.status}
-        </div>
-        <div>
-          <strong>Área:</strong> {caseDetail.area}
-        </div>
-        <div>
-          <strong>Comarca:</strong> {caseDetail.comarca}
-        </div>
+      <div style={{ marginTop: "10px" }}>
+        <button
+          type="button"
+          onClick={() => setShowInfo((v) => !v)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: "1px solid #d1d5db",
+            background: showInfo ? "white" : "#111827",
+            color: showInfo ? "#111827" : "white",
+          }}
+        >
+          {showInfo ? "Ocultar informações" : "Exibir informações"}
+        </button>
       </div>
+
+      {showInfo && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <strong>Nº Processo:</strong> {caseDetail.numeroProcesso}
+            </div>
+            <div>
+              <strong>Status:</strong> {caseDetail.status}
+            </div>
+            <div>
+              <strong>Área:</strong> {caseDetail.area}
+            </div>
+            <div>
+              <strong>Comarca:</strong> {caseDetail.comarca}
+            </div>
+          </div>
+
+          {/* Informações adicionais (padrão pré-atendimento) */}
+          <div style={{ marginTop: "12px" }}>
+            <div style={{ marginBottom: "8px" }}>
+              <strong>Urgência:</strong> {caseDetail.urgencia || "N/D"}
+            </div>
+
+            <div style={{ marginBottom: "8px" }}>
+              <strong>Resultado:</strong> {caseDetail.resultadoSentenca || "N/D"}
+            </div>
+
+            <div style={{ marginBottom: "8px" }}>
+              <strong>Criado em:</strong> {formatDateTimeBR(toDateSafe(caseDetail.createdAt))}
+            </div>
+
+            <div style={{ marginBottom: "8px" }}>
+              <strong>Atualizado em:</strong> {formatDateTimeBR(toDateSafe(caseDetail.updatedAt))}
+            </div>
+
+            <div style={{ marginBottom: "8px" }}>
+              <strong>Encerramento:</strong> {formatDateTimeBR(toDateSafe(caseDetail.dataEncerramento))}
+            </div>
+
+            <div style={{ marginTop: "12px" }}>
+              <strong>Descrição:</strong>
+              <p style={{ marginTop: "6px", whiteSpace: "pre-wrap" }}>
+                {caseDetail.descricao || "N/D"}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: "8px", marginTop: "30px" }}>
@@ -158,7 +238,27 @@ function ClientCaseDetailPage() {
         <>
           <hr style={{ margin: "30px 0" }} />
 
+          <div style={{ marginTop: "12px", marginBottom: "18px" }}>
+            <h4 style={{ marginBottom: "8px" }}>Enviar documento ao escritório</h4>
+
+            <input
+              type="file"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            />
+
+            <div style={{ marginTop: "10px" }}>
+              <button
+                type="button"
+                onClick={handleUploadDocumento}
+                disabled={!selectedFile || isUploading}
+              >
+                {isUploading ? "Enviando..." : "Enviar documento"}
+              </button>
+            </div>
+          </div>
+
           <h3>Documentos do processo</h3>
+
 
           {caseDetail.documentos?.length === 0 && (
             <p>Nenhum documento anexado.</p>
@@ -171,7 +271,7 @@ function ClientCaseDetailPage() {
                   {doc.nome}
                 </a>
                 <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  {formatDateTimeBR(toDateSafe(doc.createdAt))}
+                  {formatDateTimeBR(toDateSafe(doc.enviadoEm || doc.createdAt))}
                 </div>
               </li>
             ))}
