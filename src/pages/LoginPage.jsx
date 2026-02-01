@@ -47,7 +47,7 @@ function LoginPage() {
 
       {/* 1. NAVBAR: Identidade e Navegação */}
       <header className="sticky top-0 z-40 w-full backdrop-blur bg-white/95">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center bg-slate-900">
+        <div className="w-full px-6 py-4 flex justify-between items-center bg-slate-900">
 
           {/* Logo */}
           <div className="flex pr-4 items-center gap-2 text-white">
@@ -61,7 +61,6 @@ function LoginPage() {
             </span>
           </div>
 
-          {/* Nav + Botão */}
           {/* Nav + Botão */}
           <div className="flex flex-col items-center gap-3">
             <nav className="flex gap-2 md:gap-16 text-sm font-medium">
@@ -87,6 +86,7 @@ function LoginPage() {
 
         </div>
       </header>
+
 
       {/* 2. HERO SECTION: Apresentação Institucional */}
       <section className="bg-slate-900 text-white py-20 lg:py-32">

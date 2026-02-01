@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from "@/services/firebase";
 import apiClient from '@/services/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +37,46 @@ function PreAtendimentoPage() {
   // Modal de detalhes do Pré-Atendimento (Admin/Advogado)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+
+  const toISODate = (v) => {
+    if (!v) return "";
+    // Firestore Timestamp-like
+    if (typeof v === "object" && v?._seconds) {
+      return new Date(v._seconds * 1000).toISOString().slice(0, 10);
+    }
+    const d = new Date(v);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    return "";
+  };
+
+  const applyClientDocToForm = (clientDoc) => {
+    if (!clientDoc) return;
+
+    const addr = clientDoc.address || clientDoc.endereco || {};
+
+    setFormData((prev) => ({
+      ...prev,
+
+      clientId: clientDoc.authUid || prev.clientId,
+      nome: clientDoc.name || clientDoc.nome || prev.nome,
+      email: clientDoc.email || prev.email,
+      telefone: clientDoc.phone || clientDoc.telefone || prev.telefone,
+      cpfCnpj: clientDoc.cpfCnpj || prev.cpfCnpj,
+      dataNascimento: toISODate(clientDoc.dataNascimento) || prev.dataNascimento,
+      estadoCivil: clientDoc.estadoCivil || prev.estadoCivil,
+
+      endereco: {
+        ...prev.endereco,
+        cep: addr.cep || prev.endereco.cep,
+        rua: addr.rua || prev.endereco.rua,
+        numero: addr.numero || prev.endereco.numero,
+        complemento: addr.complemento || prev.endereco.complemento,
+        bairro: addr.bairro || prev.endereco.bairro,
+        cidade: addr.cidade || prev.endereco.cidade,
+        estado: addr.estado || prev.endereco.estado,
+      },
+    }));
+  };
 
   const formatBool = (v) => (v ? 'Sim' : 'Não');
 
@@ -137,8 +178,41 @@ function PreAtendimentoPage() {
     }
   };
 
+  // --- 1. BUSCAR DADOS (Apenas se for Cliente) ---
   useEffect(() => {
-    fetchLeads();
+    if (userRole !== "cliente") return;
+
+    (async () => {
+      try {
+        const res = await apiClient.get('/clients/me');
+        const c = res.data;
+
+        const endereco = c.endereco || c.address || {};
+
+        setFormData(prev => ({
+          ...prev,
+          clientId: c.authUid || auth.currentUser?.uid || prev.clientId,
+          nome: c.name || prev.nome,
+          email: c.email || prev.email,
+          cpfCnpj: c.cpfCnpj || prev.cpfCnpj,
+          telefone: c.phone || prev.telefone,
+          dataNascimento: (c.dataNascimento || '').slice(0, 10),
+          estadoCivil: c.estadoCivil || '',
+          endereco: {
+            ...prev.endereco,
+            cep: endereco.cep || '',
+            rua: endereco.rua || '',
+            numero: endereco.numero || '',
+            complemento: endereco.complemento || '',
+            bairro: endereco.bairro || '',
+            cidade: endereco.cidade || '',
+            estado: endereco.estado || '',
+          }
+        }));
+      } catch (err) {
+        console.error("Erro ao buscar /clients/me:", err.response?.data || err.message);
+      }
+    })();
   }, [userRole]);
 
   useEffect(() => {
@@ -154,15 +228,27 @@ function PreAtendimentoPage() {
   }, [isModalOpen, isAdmin]);
 
   useEffect(() => {
-    if (currentUser && userRole === 'cliente') {
-      setFormData(prev => ({
-        ...prev,
-        nome: currentUser.nome,
-        email: currentUser.email,
-        clientId: currentUser.uid // Vínculo direto
-      }));
-    }
-  }, [currentUser]);
+    if (userRole !== "cliente") return;
+
+    (async () => {
+      try {
+        const res = await apiClient.get('/clients/me');
+        applyClientDocToForm(res.data);
+      } catch (err) {
+        console.error("Erro ao buscar /clients/me:", err.response?.data || err.message);
+
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+        setFormData((prev) => ({
+          ...prev,
+          clientId: uid,
+          nome: auth.currentUser?.displayName || prev.nome,
+          email: auth.currentUser?.email || prev.email,
+        }));
+      }
+    })();
+  }, [userRole]);
+
 
   // --- 2. AÇÕES DA TRIAGEM ---
   const handleRecusar = async (id) => {
@@ -248,13 +334,26 @@ function PreAtendimentoPage() {
     setLoadingForm(true);
     setErrorForm('');
     try {
+      console.log("➡️ Enviando pré-atendimento:", formData);
       await apiClient.post('/preatendimento', formData);
       setSuccessForm(true);
       if (isAdmin) fetchLeads(); // Deixar comentado: window.scrollTo(0, 0); fetchLeads();
       window.scrollTo(0, 0);
       fetchLeads();
     } catch (err) {
-      setErrorForm('Erro ao enviar. Tente novamente.');
+      console.group("❌ Erro ao criar pré-atendimento");
+      console.log("URL:", "/preatendimento");
+      console.log("Payload enviado (formData):", formData);
+      console.log("Status:", err.response?.status);
+      console.log("Resposta do backend:", err.response?.data);
+      console.log("Mensagem:", err.message);
+      console.groupEnd();
+
+      setErrorForm(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Erro ao enviar. Tente novamente."
+      );
     } finally {
       setLoadingForm(false);
     }
@@ -611,30 +710,32 @@ function PreAtendimentoPage() {
           {isAdmin && (
             <div className="bg-slate-100 p-3 rounded-md mb-4 flex items-center justify-between">
               <label className="text-sm font-bold text-slate-700">Vincular a cliente já cadastrado?</label>
-              <Select onValueChange={(val) => {
-                const client = existingClients.find(c => c.id === val);
-                if (client) {
-                  setFormData(prev => ({
-                    ...prev,
-                    clientId: client.id,
-                    nome: client.name,
-                    email: client.email,
-                    cpfCnpj: client.cpfCnpj
-                  }));
-                  setIsExistingClient(true);
-                }
-              }}>
+              <Select
+                onValueChange={async (authUid) => {
+                  try {
+                    const res = await apiClient.get(`/clients/by-auth/${authUid}`);
+                    applyClientDocToForm(res.data);
+                    setIsExistingClient(true);
+                  } catch (err) {
+                    console.error("Erro ao buscar perfil completo do cliente:", err.response?.data || err.message);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-[250px] bg-white">
                   <SelectValue placeholder="Selecione o cliente..." />
                 </SelectTrigger>
+
                 <SelectContent>
-                  {existingClients.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name || c.nome} ({c.cpfCnpj})
-                    </SelectItem>
-                  ))}
+                  {existingClients
+                    .filter((c) => !!c.authUid)
+                    .map((c) => (
+                      <SelectItem key={c.authUid} value={c.authUid}>
+                        {c.name} ({c.cpfCnpj || c.email})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
+
             </div>
           )}
           <section className="space-y-4">
