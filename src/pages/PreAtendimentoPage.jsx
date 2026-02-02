@@ -34,6 +34,12 @@ function PreAtendimentoPage() {
   const [existingClients, setExistingClients] = useState([]);
   const [isExistingClient, setIsExistingClient] = useState(false);
 
+  // para editar Pré-Atendimentos
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
   // Modal de detalhes do Pré-Atendimento (Admin/Advogado)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -116,7 +122,9 @@ function PreAtendimentoPage() {
     triagem: {}, informacaoExtra: '',
     consentimentoLGPD: false, consentimentoWhatsapp: false, consentimentoCadastro: false
   };
+
   const [formData, setFormData] = useState(initialFormState);
+
   const handleCepBlur = async (e) => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length === 8) {
@@ -177,6 +185,12 @@ function PreAtendimentoPage() {
       setLoadingList(false);
     }
   };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    fetchLeads();
+  }, [isAdmin]);
 
   // --- 1. BUSCAR DADOS (Apenas se for Cliente) ---
   useEffect(() => {
@@ -397,6 +411,34 @@ function PreAtendimentoPage() {
       fetchLeads();
     } catch (e) { alert("Erro no upload."); }
   };
+
+  const handleEditChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    if (name.startsWith('endereco.')) {
+      const field = name.split('.')[1];
+      setEditData(prev => ({
+        ...prev,
+        endereco: { ...prev.endereco, [field]: value }
+      }));
+      return;
+    }
+
+    if (name.startsWith('triagem.')) {
+      const field = name.split('.')[1];
+      setEditData(prev => ({
+        ...prev,
+        triagem: { ...prev.triagem, [field]: value }
+      }));
+      return;
+    }
+
+    setEditData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
 
   //Prencher todos os campos. #verificar
   const renderCamposEspecificos = () => {
@@ -1011,6 +1053,36 @@ function PreAtendimentoPage() {
     );
   };
 
+  const setEditField = (path, value) => {
+    setEditData((prev) => {
+      if (!prev) return prev;
+
+      const parts = path.split(".");
+      const next = { ...prev };
+      let cur = next;
+
+      for (let i = 0; i < parts.length - 1; i++) {
+        const k = parts[i];
+        cur[k] = { ...(cur[k] || {}) };
+        cur = cur[k];
+      }
+
+      cur[parts[parts.length - 1]] = value;
+      return next;
+    });
+  };
+
+  const toggleEditDocumento = (docName) => {
+    setEditData((prev) => {
+      const docs = Array.isArray(prev?.documentos) ? prev.documentos : [];
+      const exists = docs.includes(docName);
+      return {
+        ...prev,
+        documentos: exists ? docs.filter((d) => d !== docName) : [...docs, docName],
+      };
+    });
+  };
+
   // --- RENDERIZAÇÃO ---
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
@@ -1441,6 +1513,24 @@ function PreAtendimentoPage() {
 
                   {/* Rodapé */}
                   <div className="flex justify-end">
+                    {isAdmin && selectedLead && (
+                      <Button
+                        variant="default"
+                        onClick={() => {
+                          setEditData({
+                            ...selectedLead,
+                            endereco: selectedLead.endereco || {
+                              rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: ''
+                            },
+                            triagem: selectedLead.triagem || {},
+                            documentos: Array.isArray(selectedLead.documentos) ? selectedLead.documentos : [],
+                          });
+                          setIsEditOpen(true);
+                        }}
+                      >
+                        Editar pré-atendimento
+                      </Button>
+                    )}
                     <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
                       Fechar
                     </Button>
@@ -1449,9 +1539,274 @@ function PreAtendimentoPage() {
               )}
             </DialogContent>
           </Dialog>
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Editar Pré-Atendimento</DialogTitle>
+                <DialogDescription>
+                  Todas as alterações feitas aqui serão salvas no pré-atendimento.
+                </DialogDescription>
+              </DialogHeader>
+
+              {!editData ? (
+                <p className="text-sm text-slate-500">Carregando dados...</p>
+              ) : (
+                <form
+                  className="space-y-6"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setSavingEdit(true);
+                    try {
+                      await apiClient.put(`/preatendimento/${editData.id}`, editData);
+                      alert("Pré-atendimento atualizado com sucesso!");
+                      setIsEditOpen(false);
+                      fetchLeads();
+                    } catch (err) {
+                      console.error(err);
+                      alert("Erro ao salvar alterações.");
+                    } finally {
+                      setSavingEdit(false);
+                    }
+                  }}
+                >
+
+                  {/* ================ ENDEREÇO ================ */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Endereço</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {['rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'].map((f) => (
+                        <Input
+                          key={f}
+                          placeholder={f}
+                          value={editData.endereco?.[f] || ''}
+                          onChange={(e) =>
+                            setEditData(p => ({
+                              ...p,
+                              endereco: { ...p.endereco, [f]: e.target.value }
+                            }))
+                          }
+                        />
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* ============== DADOS DO CASO ============== */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Dados do Caso</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                      <Input
+                        type="date"
+                        value={editData.dataProblema || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, dataProblema: e.target.value }))
+                        }
+                      />
+
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={!!editData.problemaContinuo}
+                          onChange={(e) =>
+                            setEditData(p => ({ ...p, problemaContinuo: e.target.checked }))
+                          }
+                        />
+                        Problema contínuo
+                      </label>
+
+                      <Select
+                        value={editData.urgencia || ''}
+                        onValueChange={(v) =>
+                          setEditData(p => ({ ...p, urgencia: v }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Urgência" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Baixa">Baixa</SelectItem>
+                          <SelectItem value="Média">Média</SelectItem>
+                          <SelectItem value="Alta">Alta</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <textarea
+                        className="textarea-base md:col-span-3"
+                        placeholder="Objetivo"
+                        value={editData.objetivo || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, objetivo: e.target.value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* ============= PARTE CONTRÁRIA ============= */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Parte Contrária</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        placeholder="Nome"
+                        value={editData.parteContrariaNome || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, parteContrariaNome: e.target.value }))
+                        }
+                      />
+                      <Input
+                        placeholder="Tipo de relação"
+                        value={editData.tipoRelacao || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, tipoRelacao: e.target.value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* ================ TRIAGEM =============== */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Triagem Específica</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {editData.triagem &&
+                        Object.entries(editData.triagem).map(([k, v]) => (
+                          <Input
+                            key={k}
+                            placeholder={k}
+                            value={v}
+                            onChange={(e) =>
+                              setEditData(p => ({
+                                ...p,
+                                triagem: { ...p.triagem, [k]: e.target.value }
+                              }))
+                            }
+                          />
+                        ))}
+                    </CardContent>
+                  </Card>
+
+                  {/* ============= COMPLEMENTOS ============= */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Complementos</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <p className="text-sm font-bold mb-3">Documentos selecionados</p>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {["Contratos", "Comprovantes", "Mensagens/Prints", "Boletim de Ocorrência", "Laudos", "Sentenças", "Outros"].map((doc) => {
+                            const checked = Array.isArray(editData?.documentos) && editData.documentos.includes(doc);
+
+                            return (
+                              <label key={doc} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                  checked={checked}
+                                  onChange={() => {
+                                    setEditData((p) => {
+                                      const current = Array.isArray(p?.documentos) ? p.documentos : [];
+                                      const next = current.includes(doc)
+                                        ? current.filter((d) => d !== doc)
+                                        : [...current, doc];
+                                      return { ...p, documentos: next };
+                                    });
+                                  }}
+                                />
+                                {doc}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <textarea
+                        className="textarea-base"
+                        placeholder="Informação extra"
+                        value={editData.informacaoExtra || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, informacaoExtra: e.target.value }))
+                        }
+                      />
+
+                      <Input
+                        placeholder="Valor da proposta"
+                        type="number"
+                        value={editData.proposalValue || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, proposalValue: e.target.value }))
+                        }
+                      />
+
+                      <textarea
+                        className="textarea-base"
+                        placeholder="Observações do admin"
+                        value={editData.adminNotes || ''}
+                        onChange={(e) =>
+                          setEditData(p => ({ ...p, adminNotes: e.target.value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+                  {/* ============== NEGOCIAÇÃO ============== */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Negociação</CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      <Input
+                        placeholder="Valor da proposta (R$)"
+                        type="number"
+                        value={editData?.proposalValue || ""}
+                        onChange={(e) =>
+                          setEditData((p) => ({ ...p, proposalValue: e.target.value }))
+                        }
+                      />
+
+                      <Input
+                        placeholder="Status da proposta (ex: sent / accepted)"
+                        value={editData?.proposalStatus || ""}
+                        onChange={(e) =>
+                          setEditData((p) => ({ ...p, proposalStatus: e.target.value }))
+                        }
+                      />
+
+                      <textarea
+                        className="textarea-base min-w-full"
+                        placeholder="Observações do admin"
+                        value={editData?.adminNotes || ""}
+                        onChange={(e) =>
+                          setEditData((p) => ({ ...p, adminNotes: e.target.value }))
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* ================ AÇÕES ================= */}
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={savingEdit}>
+                      {savingEdit ? 'Salvando...' : 'Salvar alterações'}
+                    </Button>
+                  </div>
+
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
         </>
       ) : (
-
         /* --- CENÁRIO 2: PÚBLICO (VÊ O FORMULÁRIO DIRETO NA TELA) --- */
         <Card className="border-slate-200 shadow-md">
           {!currentUser && (
