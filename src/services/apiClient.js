@@ -2,7 +2,7 @@ import axios from 'axios';
 import { auth } from './firebase';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL?.trim() || "/api";
-const apiClient = axios.create({ baseURL });
+const apiClient = axios.create({ baseURL,  timeout: 20000});
 
 apiClient.interceptors.request.use(async (config) => {
     const user = auth.currentUser;
