@@ -39,6 +39,7 @@ function IaAtendimentoPage() {
     if (!selectedprocessoId) return;
 
     setIsAnalyzing(true);
+    
     try {
       const resp = await apiClient.post('/ai/atendimento/executar', {
         processoId: selectedprocessoId

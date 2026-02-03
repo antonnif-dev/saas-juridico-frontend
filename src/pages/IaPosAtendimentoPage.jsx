@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/services/apiClient';
-import { 
-  Bot, MessageCircle, BookOpen, FileEdit, Sparkles, 
+import {
+  Bot, MessageCircle, BookOpen, FileEdit, Sparkles,
   ChevronRight, Mic, FileText, BellRing, Search, Scale,
   Gavel, CheckCircle, PenTool
 } from 'lucide-react';
+
 
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { CardFooter } from "@/components/ui/card";
 
 function IaPosAtendimentoPage() {
   const [cases, setCases] = useState([]);
   const [selectedprocessoId, setSelectedprocessoId] = useState('');
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("cliente"); // cliente, estrategia, redacao
@@ -30,49 +33,60 @@ function IaPosAtendimentoPage() {
     fetchCases();
   }, []);
 
-  // SIMULAÇÃO DAS FUNÇÕES DA IA
-  const handleGenerate = (type) => {
+  const handleGenerate = async (type) => {
+    if (!selectedprocessoId) return;
+
     setIsProcessing(true);
     setResult(null);
 
-    setTimeout(() => {
-      setIsProcessing(false);
-      
-      if (type === 'tradutor') {
-        setResult({
-          titulo: "Explicação para o Cliente (WhatsApp/Email)",
-          conteudo: "Olá! O juiz acabou de dar uma decisão importante (Sentença). Em resumo: ganhamos os pedidos de horas extras, mas o dano moral foi negado. O valor estimado subiu para R$ 35.000. A empresa ainda pode recorrer em 8 dias. Recomendo aguardarmos o prazo deles antes de qualquer ação.",
-          acao: "Copiar Texto"
-        });
-      } 
-      else if (type === 'guia') {
-        setResult({
-          titulo: "Guia de Preparação para Audiência",
-          conteudo: "1. Chegar 30min antes.\n2. Levar RG original e Carteira de Trabalho.\n3. Testemunhas: João e Maria (confirmar presença).\n4. Ponto de atenção: O advogado da empresa vai perguntar sobre o horário de almoço. Responda apenas a verdade: que fazia 20min.\n5. Não se exaltar com o juiz.",
-          acao: "Gerar PDF"
-        });
-      }
-      else if (type === 'peca') {
-        setResult({
-          titulo: "Minuta de Réplica à Contestação",
-          conteudo: "EXCELENTÍSSIMO SENHOR DOUTOR...\n\nEm que pese o esforço da Reclamada, suas alegações não merecem prosperar. A preliminar de inépcia é descabida pois...\n\n[IA gerou 3 páginas de argumentação baseada na contestação anexada]...",
-          acao: "Exportar Word"
-        });
-      }
-      else if (type === 'timeline') {
-         setResult({
-            titulo: "Relatório Mensal de Andamentos",
-            conteudo: "Histórico do mês de Outubro:\n- 05/10: Protocolo da Inicial\n- 12/10: Juiz designou audiência para Nov/2025\n- 28/10: Citação da empresa via correio.\n\nPróximos passos: Aguardar defesa da empresa até a audiência.",
-            acao: "Enviar por E-mail"
-         });
+    try {
+      if (type === "tradutor") {
+        const r = await apiClient.post("/ai/pos/cliente/tradutor", { processoId: selectedprocessoId });
+        setResult(r.data);
+        return;
       }
 
-    }, 2500);
+      if (type === "timeline") {
+        const r = await apiClient.post("/ai/pos/cliente/relatorio", { processoId: selectedprocessoId });
+        setResult(r.data);
+        return;
+      }
+
+      if (type === "guia") {
+        const r = await apiClient.post("/ai/pos/estrategia/viabilidade", { processoId: selectedprocessoId });
+        // mostra como “resultado”
+        setResult(r.data);
+        return;
+      }
+
+      if (type === "datajud") {
+        const r = await apiClient.post("/ai/pos/estrategia/datajud", { processoId: selectedprocessoId });
+        setResult(r.data);
+        return;
+      }
+
+      if (type === "peca") {
+        const r = await apiClient.post("/ai/pos/redacao/recurso", { processoId: selectedprocessoId });
+        setResult(r.data);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      setResult({
+        titulo: "Erro",
+        conteudo: e?.response?.data?.error || "Falha ao executar a função. Verifique se o processo tem o campo 'sentenca' preenchido.",
+        acao: "OK"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
-      
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-8 bg-gradient-to-r from-purple-50 to-white p-6 rounded-xl border border-purple-100">
         <div className="p-3 bg-purple-600 rounded-lg text-white shadow-lg">
@@ -94,9 +108,10 @@ function IaPosAtendimentoPage() {
                 <SelectValue placeholder="Busque pelo processo..." />
               </SelectTrigger>
               <SelectContent>
-                {cases.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>
-                ))}
+                {cases .filter(c => (c.status || "").toLowerCase() === "sentença")
+                  .map(c => (
+                    <SelectItem key={c.id} value={c.id}> {c.titulo} </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -110,19 +125,19 @@ function IaPosAtendimentoPage() {
       {selectedprocessoId && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-slate-100 rounded-xl mb-6">
-            <TabsTrigger value="cliente" className="py-3 gap-2"><MessageCircle className="w-4 h-4"/> Comunicação Cliente</TabsTrigger>
-            <TabsTrigger value="estrategia" className="py-3 gap-2"><BookOpen className="w-4 h-4"/> Estratégia</TabsTrigger>
-            <TabsTrigger value="redacao" className="py-3 gap-2"><FileEdit className="w-4 h-4"/> Redação Jurídica</TabsTrigger>
+            <TabsTrigger value="cliente" className="py-3 gap-2"><MessageCircle className="w-4 h-4" /> Comunicação Cliente</TabsTrigger>
+            <TabsTrigger value="estrategia" className="py-3 gap-2"><BookOpen className="w-4 h-4" /> Estratégia</TabsTrigger>
+            <TabsTrigger value="redacao" className="py-3 gap-2"><FileEdit className="w-4 h-4" /> Redação Jurídica</TabsTrigger>
           </TabsList>
 
           {/* ABA 1: CLIENTE */}
           <TabsContent value="cliente" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card onClick={() => handleGenerate('tradutor')} className="cursor-pointer hover:border-purple-400 transition-all">
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bot className="w-4 h-4 text-purple-600"/> Tradutor de "Juridiquês"</CardTitle><CardDescription>Resumir última decisão em linguagem simples.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bot className="w-4 h-4 text-purple-600" /> Tradutor de "Juridiquês"</CardTitle><CardDescription>Resumir última decisão em linguagem simples.</CardDescription></CardHeader>
               </Card>
               <Card onClick={() => handleGenerate('timeline')} className="cursor-pointer hover:border-purple-400 transition-all">
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BellRing className="w-4 h-4 text-purple-600"/> Relatório Mensal</CardTitle><CardDescription>Gerar histórico cronológico para envio.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><BellRing className="w-4 h-4 text-purple-600" /> Relatório Mensal</CardTitle><CardDescription>Gerar histórico cronológico para envio.</CardDescription></CardHeader>
               </Card>
             </div>
           </TabsContent>
@@ -131,18 +146,36 @@ function IaPosAtendimentoPage() {
           <TabsContent value="estrategia" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card onClick={() => handleGenerate('guia')} className="cursor-pointer hover:border-purple-400 transition-all">
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mic className="w-4 h-4 text-blue-600"/> Preparação Audiência</CardTitle><CardDescription>Gerar guia de perguntas e comportamento.</CardDescription></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Gavel className="w-4 h-4 text-blue-600" /> Viabilidade de Recurso (Sentença × Processo)
+                  </CardTitle>
+                  <CardDescription>Analisa a sentença, compara com o processo e gera prós/contras + score.</CardDescription>
+                </CardHeader>
               </Card>
-               {/* Placeholder para outras ferramentas */}
-               <Card className="opacity-50"><CardHeader><CardTitle className="text-base">Análise de Risco (Em breve)</CardTitle></CardHeader></Card>
+
+              <Card onClick={() => handleGenerate('datajud')} className="cursor-pointer hover:border-purple-400 transition-all">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Search className="w-4 h-4 text-blue-600" /> Consulta CNJ/Datajud (Visual)
+                  </CardTitle>
+                  <CardDescription>Gera query e filtros para buscar casos semelhantes (contrato pronto pra API).</CardDescription>
+                </CardHeader>
+              </Card>
+
             </div>
           </TabsContent>
 
           {/* ABA 3: REDAÇÃO */}
           <TabsContent value="redacao" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <Card onClick={() => handleGenerate('peca')} className="cursor-pointer hover:border-purple-400 transition-all">
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4 text-green-600"/> Minutar Peça</CardTitle><CardDescription>Réplica, Recurso ou Manifestação.</CardDescription></CardHeader>
+              <Card onClick={() => handleGenerate('peca')} className="cursor-pointer hover:border-purple-400 transition-all">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-green-600" /> Minuta de Recurso
+                  </CardTitle>
+                  <CardDescription>Modelo base com trechos-chave da sentença e estrutura recursal.</CardDescription>
+                </CardHeader>
               </Card>
             </div>
           </TabsContent>
@@ -153,8 +186,8 @@ function IaPosAtendimentoPage() {
       {/* ÁREA DE RESULTADO */}
       {isProcessing && (
         <div className="p-12 text-center border rounded-lg bg-slate-50 animate-pulse">
-           <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-4 animate-spin" />
-           <p className="text-purple-700 font-medium">A Inteligência Artificial está analisando os autos...</p>
+          <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-4 animate-spin" />
+          <p className="text-purple-700 font-medium">A Inteligência Artificial está analisando os autos...</p>
         </div>
       )}
 
@@ -164,17 +197,54 @@ function IaPosAtendimentoPage() {
             <CardTitle className="text-xl text-purple-900">{result.titulo}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea 
-              className="min-h-[200px] bg-slate-50 font-sans text-base leading-relaxed p-4 border-slate-200 focus:ring-purple-500 textarea-base" 
+            <Textarea
+              className="min-h-[200px] bg-slate-50 font-sans text-base leading-relaxed p-4 border-slate-200 focus:ring-purple-500 textarea-base"
               value={result.conteudo}
               readOnly
             />
           </CardContent>
           <CardFooter className="justify-end gap-3 bg-slate-50/50 pt-4">
-            <Button variant="outline">Refazer</Button>
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResult(null);
+              }}
+            >
+              Limpar
+            </Button>
+
+            <Button
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={async () => {
+                const acao = result?.acao || "";
+
+                if (acao.toLowerCase().includes("copiar")) {
+                  await navigator.clipboard.writeText(result.conteudo || "");
+                  return;
+                }
+
+                if (acao.toLowerCase().includes("pdf")) {
+                  const resp = await apiClient.post(
+                    "/ai/pos/pdf",
+                    { titulo: result.titulo, conteudo: result.conteudo },
+                    { responseType: "blob" }
+                  );
+
+                  const url = window.URL.createObjectURL(new Blob([resp.data], { type: "application/pdf" }));
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.setAttribute("download", "ia_pos_atendimento.pdf");
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  window.URL.revokeObjectURL(url);
+                  return;
+                }
+              }}
+            >
               {result.acao} <ChevronRight className="ml-2 w-4 h-4" />
             </Button>
+
           </CardFooter>
         </Card>
       )}
