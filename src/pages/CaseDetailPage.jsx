@@ -93,7 +93,6 @@ function CaseDetailPage() {
         apiClient.get(`/processo/${processoId}`),
         apiClient.get(`/processo/${processoId}/movimentacoes`),
 
-        apiClient.get(`/messages/processo/${processoId}`).catch(() => ({ data: [] })),
       ]);
 
       setCaseDetail(caseResponse.data);

@@ -131,28 +131,29 @@ function AgendaPage() {
 
   const handleModalSubmit = async (e) => {
     e.preventDefault();
-    const { id, titulo, dataHora, tipo, processoId } = selectedEvent;
-
-    // Tratamento para enviar null se for "unselected"
-    const finalProcessoId = processoId === 'unselected' ? null : processoId;
-
-    const dataToSend = {
-      titulo,
-      dataHora: new Date(dataHora).toISOString(),
-      tipo,
-      processoId: finalProcessoId
-    };
 
     try {
+      const { id, titulo, dataHora, tipo, processoId } = selectedEvent;
+
+      const finalProcessoId = processoId === "unselected" ? null : processoId;
+
+      const dataToSend = {
+        titulo,
+        dataHora: new Date(dataHora).toISOString(),
+        tipo,
+        ...(finalProcessoId ? { processoId: finalProcessoId } : {}),
+      };
+
       if (id) {
         await apiClient.put(`/agenda/${id}`, dataToSend);
       } else {
-        await apiClient.post('/agenda', dataToSend);
+        await apiClient.post("/agenda", dataToSend);
       }
+
       setIsDialogOpen(false);
-      fetchData(); // Recarrega os dados para atualizar calendário e lista
+      fetchData();
     } catch (err) {
-      alert('Falha ao salvar o compromisso.');
+      alert("Falha ao salvar o compromisso.");
     }
   };
 
