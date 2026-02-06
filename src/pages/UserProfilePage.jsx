@@ -8,6 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, Camera, Search } from 'lucide-react';
 
+function validatePassword(pw) {
+  const missing = [];
+  if (!pw || pw.length < 8) missing.push("mínimo 8 caracteres");
+  if (!/[A-Z]/.test(pw)) missing.push("1 letra maiúscula");
+  if (!/[a-z]/.test(pw)) missing.push("1 letra minúscula");
+  if (!/[0-9]/.test(pw)) missing.push("1 número");
+  if (!/[^A-Za-z0-9]/.test(pw)) missing.push("1 caractere especial");
+  return missing;
+}
+
 function UserProfilePage() {
   const { currentUser } = useAuth();
   const fileInputRef = useRef(null);
@@ -34,7 +44,6 @@ function UserProfilePage() {
 
   const [photoPreview, setPhotoPreview] = useState(null);
 
-  // Carrega dados do usuário logado
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -61,7 +70,6 @@ function UserProfilePage() {
     loadUserData();
   }, []);
 
-  // Handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name.startsWith('endereco.')) {
@@ -133,38 +141,55 @@ function UserProfilePage() {
     e.preventDefault();
     setLoading(true);
 
-    const dataToSend = {
-      name: formData.name,
-      email: formData.email,
-      cpfCnpj: formData.cpfCnpj,
-      phone: formData.phone,
-      oab: formData.oab,
-      dataNascimento: formData.dataNascimento,
-      estadoCivil: formData.estadoCivil,
-      tipoPessoa: formData.tipoPessoa,
-      // Garante que endereço vá completo
-      endereco: {
-        cep: formData.endereco?.cep || '',
-        rua: formData.endereco?.rua || '',
-        numero: formData.endereco?.numero || '',
-        complemento: formData.endereco?.complemento || '',
-        bairro: formData.endereco?.bairro || '',
-        cidade: formData.endereco?.cidade || '',
-        estado: formData.endereco?.estado || '',
-      }
-    };
-
-    if (formData.password && formData.password.trim().length >= 6) {
-      dataToSend.password = formData.password;
-    }
-
     try {
+      const dataToSend = {
+        name: formData.name,
+        email: formData.email,
+        cpfCnpj: formData.cpfCnpj,
+        phone: formData.phone,
+        oab: formData.oab,
+        dataNascimento: formData.dataNascimento,
+        estadoCivil: formData.estadoCivil,
+        tipoPessoa: formData.tipoPessoa,
+
+        endereco: {
+          cep: formData.endereco?.cep || '',
+          rua: formData.endereco?.rua || '',
+          numero: formData.endereco?.numero || '',
+          complemento: formData.endereco?.complemento || '',
+          bairro: formData.endereco?.bairro || '',
+          cidade: formData.endereco?.cidade || '',
+          estado: formData.endereco?.estado || '',
+        }
+      };
+
       await apiClient.put('/users/me', dataToSend);
+
+      if (formData.password) {
+        const missing = validatePassword(formData.password);
+        if (missing.length) {
+          alert(`Senha fraca. Falta: ${missing.join(", ")}`);
+          return;
+        }
+
+        try {
+          await currentUser.updatePassword(formData.password);
+          alert("Senha atualizada com sucesso!");
+        } catch (err) {
+          if (err.code === "auth/requires-recent-login") {
+            alert("Por segurança, faça login novamente para trocar a senha.");
+          } else {
+            throw err;
+          }
+        }
+      }
+
       alert("Perfil atualizado com sucesso!");
       setFormData(prev => ({ ...prev, password: '' }));
+
     } catch (error) {
       console.error(error);
-      const msg = error.response?.data?.message || "Erro ao atualizar perfil.";
+      const msg = error.response?.data?.message || error.message || "Erro ao atualizar perfil.";
       alert(msg);
     } finally {
       setLoading(false);
